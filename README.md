@@ -1,2 +1,2 @@
-# anomaly_detection
+# anomaly
 Automated anomaly detection
