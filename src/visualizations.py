@@ -106,8 +106,16 @@ def main():
         'manhattan',
         'cosine',
     ]
+    if not os.path.exists('../data'):
+        os.mkdir('../data')
 
     for dataset in datasets:
+        if not os.path.exists(f'../data/{dataset}'):
+            os.mkdir(f'../data/{dataset}')
+        for folder in ['umap', 'frames', 'videos']:
+            if not os.path.exists(f'../data/{dataset}/{folder}'):
+                os.mkdir(f'../data/{dataset}/{folder}')
+
         normalize = dataset not in ['mnist']
         data, labels = read_data(dataset, normalize)
         for metric in metrics:
