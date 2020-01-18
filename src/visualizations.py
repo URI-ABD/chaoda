@@ -7,6 +7,8 @@ import numpy as np
 import scipy.io
 
 from matplotlib import pyplot as plt
+# noinspection PyUnresolvedReferences
+from mpl_toolkits.mplot3d import Axes3D
 
 
 def min_max_normalization(data):
@@ -55,8 +57,8 @@ def plot_2d(
         data: np.ndarray,
         labels: np.ndarray,
         title: str,
-        figsize=(6, 6),
-        dpi=150,
+        figsize=(8, 8),
+        dpi=128,
 ):
     x, y = data[:, 0], data[:, 1]
     plt.close('all')
@@ -74,16 +76,19 @@ def plot_3d(
         labels: np.ndarray,
         title: str,
         folder: str,
-        figsize=(6, 6),
-        dpi=150,
+        figsize=(8, 8),
+        dpi=128,
 ):
     x, y, z = data[:, 0], data[:, 1], data[:, 2]
     plt.clf()
     plt.close('all')
     fig = plt.figure(figsize=figsize, dpi=dpi)
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(x, y, z, c=[float(d) for d in labels], s=10. * labels + 1., cmap='Dark2')
+    ax.scatter(x, y, z, c=[float(d) for d in labels], s=10. * labels + .1, cmap='Dark2')
     plt.title(title)
+    plt.gca().set_axis_off()
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0, 0)
     for azimuth in range(0, 360):
         ax.view_init(elev=10, azim=azimuth)
         plt.savefig(folder + f'{azimuth:03d}.png', bbox_inches='tight', pad_inches=0)
@@ -91,7 +96,7 @@ def plot_3d(
 
     # TODO: Figure out how to issue a bash command from inside python
     """ from the data directory:
-    ffmpeg -framerate 30 -i mnist/frames/euclidean-%03d.png -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p mnist-euclidean-30fps.mp4
+    ffmpeg -framerate 30 -i mnist/frames/euclidean-%03d.png -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p mnist/euclidean-30fps.mp4
     """
     return
 
@@ -103,7 +108,7 @@ def make_dirs(datasets: List[str]):
     for dataset in datasets:
         if not os.path.exists(f'../data/{dataset}'):
             os.mkdir(f'../data/{dataset}')
-        for folder in ['umap', 'frames', 'videos']:
+        for folder in ['umap', 'frames']:
             if not os.path.exists(f'../data/{dataset}/{folder}'):
                 os.mkdir(f'../data/{dataset}/{folder}')
 
