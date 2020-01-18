@@ -81,7 +81,7 @@ def plot_3d(
     plt.close('all')
     fig = plt.figure(figsize=figsize, dpi=dpi)
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(x, y, z, c=labels, s=s, cmap='Set1')
+    ax.scatter(x, y, z, c=[float(d) for d in labels], s=10. * labels + 1., cmap='Dark2')
     plt.title(title)
     for azimuth in range(0, 360):
         ax.view_init(elev=10, azim=azimuth)
