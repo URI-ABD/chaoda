@@ -1,5 +1,6 @@
 import os
 import pickle
+from typing import List
 
 import umap
 import numpy as np
@@ -95,18 +96,7 @@ def plot_3d(
     return
 
 
-def main():
-    datasets = [
-        'mnist',
-        'cover',
-        'letter',
-        # 'http',
-    ]
-    metrics = [
-        'euclidean',
-        'manhattan',
-        'cosine',
-    ]
+def make_dirs(datasets: List[str]):
     if not os.path.exists('../data'):
         os.mkdir('../data')
 
@@ -117,8 +107,26 @@ def main():
             if not os.path.exists(f'../data/{dataset}/{folder}'):
                 os.mkdir(f'../data/{dataset}/{folder}')
 
-        # TODO: Figure out how to also download data here.
+    # TODO: Figure out how to also download data here.
+    return
 
+
+def main():
+    datasets = [
+        'mnist',
+        'cover',
+        'letter',
+        # 'http',
+    ]
+    make_dirs(datasets)
+
+    metrics = [
+        'euclidean',
+        'manhattan',
+        'cosine',
+    ]
+
+    for dataset in datasets:
         normalize = dataset not in ['mnist']
         data, labels = read_data(dataset, normalize)
         for metric in metrics:
