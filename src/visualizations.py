@@ -88,6 +88,7 @@ def plot_3d(
         plt.savefig(folder + f'{azimuth:03d}.png', bbox_inches='tight', pad_inches=0)
     plt.close('all')
 
+    # TODO: Figure out how to issue a bash command from inside python
     """ from the data directory:
     ffmpeg -framerate 30 -i mnist/frames/euclidean-%03d.png -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p mnist-euclidean-30fps.mp4
     """
@@ -115,6 +116,8 @@ def main():
         for folder in ['umap', 'frames', 'videos']:
             if not os.path.exists(f'../data/{dataset}/{folder}'):
                 os.mkdir(f'../data/{dataset}/{folder}')
+
+        # TODO: Figure out how to also download data here.
 
         normalize = dataset not in ['mnist']
         data, labels = read_data(dataset, normalize)
