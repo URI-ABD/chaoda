@@ -1,2 +1,5 @@
-# anomaly
-Automated anomaly detection
+# Anomaly
+
+Papers dedicated to automated anomaly detection.
+
+## KDD

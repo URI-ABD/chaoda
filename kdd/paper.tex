@@ -1,0 +1,63 @@
+\documentclass{article}
+
+\usepackage{arxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{graphicx}       % images
+\usepackage{mathtools}
+\usepackage{parselines}
+\usepackage{biblatex}
+\usepackage{verbatim}
+
+\title{CHESS: Anomaly Detection}
+\author{
+    Thomas~J.~Howard~III \\
+    Department of Computer Science and Statistics\\
+    University of Rhode Island \\
+    Kingston, RI 02881 \\
+    \texttt{thoward27@uri.edu}
+    \And
+    Najib~Ishaq \\
+    Department of Computer Science and Statistics\\
+    University of Rhode Island\\
+    Kingston, RI 02881 \\
+    \texttt{najib\_ishaq@zoho.com}
+}
+
+\bibliography{references}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+In this paper we use CHESS for introspective anomaly detection.
+Using the underlying clustering mechanism from CHESS, along with some manually supplied stopping criteria, we present strong evidence that CHESS is able to accurately map the underlying manifold of the data and that we are able to use this manifold and its inherent properties to successfully flag anomalous data.
+We empirically demonstrate the effectiveness of our method using several synthetic data sets.
+Finally, we explore some future opportunities that could greatly increase the scope of this work.
+\end{abstract}
+
+\keywords{
+Anomaly Detection
+\and Outlier Detection
+\and Novelty Detection
+\and Manifold Learning
+\and CHESS
+}
+
+\input{source/introduction.tex}
+\input{source/related-works.tex}
+\input{source/methods.tex}
+\input{source/results.tex}
+
+\clearpage
+\input{source/conclusion.tex}
+
+\printbibliography
+\end{document}
