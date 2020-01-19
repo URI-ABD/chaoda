@@ -1,6 +1,8 @@
 import os
 import pickle
 from typing import List
+from threading import Thread
+from subprocess import run
 
 import umap
 import numpy as np
@@ -11,6 +13,14 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 
+DATASETS = {
+    'mnsit': 'https://www.dropbox.com/s/n3wurjt8v9qi6nc/mnist.mat?dl=0',
+    'cover': 'https://www.dropbox.com/s/awx8iuzbu8dkxf1/cover.mat?dl=0',
+    'letter': 'https://www.dropbox.com/s/rt9i95h9jywrtiy/letter.mat?dl=0',
+    'http': 'https://www.dropbox.com/s/iy9ucsifal754tp/http.mat?dl=0',
+}
+
+
 def min_max_normalization(data):
     for i in range(data.shape[1]):
         min_x, max_x = np.min(data[:, i]), np.max(data[:, i])
@@ -19,7 +29,12 @@ def min_max_normalization(data):
 
 
 def read_data(dataset: str, normalize: bool = False):
-    data_dict = scipy.io.loadmat(f'../data/{dataset}/{dataset}.mat')
+    try:
+        data_dict = scipy.io.loadmat(f'../data/{dataset}/{dataset}.mat')
+    except FileNotFoundError:
+        run(['wget', DATASETS[dataset], '-O', f'../data/{dataset}/{dataset}.mat'])
+        data_dict = scipy.io.loadmat(f'../data/{dataset}/{dataset}.mat')
+
 
     data = np.asarray(data_dict['X'], dtype=np.float64)
     labels = np.asarray(data_dict['y'], dtype=np.int8)
@@ -89,15 +104,25 @@ def plot_3d(
     plt.gca().set_axis_off()
     plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
     plt.margins(0, 0, 0)
-    for azimuth in range(0, 360):
+
+    def _draw(asimuth):
         ax.view_init(elev=10, azim=azimuth)
         plt.savefig(folder + f'{azimuth:03d}.png', bbox_inches='tight', pad_inches=0)
-    plt.close('all')
 
-    # TODO: Figure out how to issue a bash command from inside python
-    """ from the data directory:
-    ffmpeg -framerate 30 -i mnist/frames/euclidean-%03d.png -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p mnist/euclidean-30fps.mp4
-    """
+    threads = [Thread(target=_draw, args=(azimuth,)) for azimuth in range(0, 360)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    plt.close('all')
+    run([
+        'ffmpeg', 
+        '-framerate', '30', 
+        '-i', 'mnist/frames/euclidean-%03d.png', 
+        '-c:v', 'libx264', 
+        '-profile:v', 'high', 
+        '-crf', '20', 
+        '-pix_fmt', 'yuv420p', 
+        'mnist/euclidean-30fps.mp4'
+    ])
     return
 
 
@@ -117,12 +142,7 @@ def make_dirs(datasets: List[str]):
 
 
 def main():
-    datasets = [
-        'mnist',
-        'cover',
-        'letter',
-        # 'http',
-    ]
+    datasets = DATASETS.keys()
     make_dirs(datasets)
 
     metrics = [
