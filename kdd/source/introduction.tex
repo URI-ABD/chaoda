@@ -25,7 +25,7 @@ Abnormal instances of data, which can be called \textit{outliers} or \textit{ano
 
 In this paper, we tackle this challenge using a novel Manifold Learning technique.
 % TODO: and compare our performance against oft-used state-of-the-art anomaly-detection techniques.
-We use CHESS~\cite{CHESS} to build a clustering on the data.
+We use CHESS~\cite{ishaq2019entropy} to build a clustering on the data.
 We then build a graph from the leaf-clusters by creating edges between clusters that have overlapping volumes.
 This process effectively learns the manifold that the data lie on.
 Once we have learned a manifold, an anomaly is simply a point which does not fall on that manifold.
