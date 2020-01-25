@@ -96,6 +96,8 @@ def plot_2d(
 
 
 def plot_3d(
+        dataset: str,
+        metric: str,
         data: np.ndarray,
         labels: np.ndarray,
         title: str,
@@ -124,12 +126,12 @@ def plot_3d(
     run([
         'ffmpeg', 
         '-framerate', '30', 
-        '-i', 'mnist/frames/euclidean-%03d.png', 
+        '-i', f'{dataset}/frames/{metric}-%03d.png',
         '-c:v', 'libx264', 
         '-profile:v', 'high', 
         '-crf', '20', 
         '-pix_fmt', 'yuv420p', 
-        'mnist/euclidean-30fps.mp4'
+        f'{dataset}/{metric}-30fps.mp4'
     ])
     return
 
@@ -170,7 +172,7 @@ def main():
                     title = f'{dataset}-{metric}-{n_neighbors}'
                     if n_components == 3:
                         folder = f'../data/{dataset}/frames/{metric}-'
-                        plot_3d(embedding, labels, title, folder)
+                        plot_3d(dataset, metric, embedding, labels, title, folder)
                         pass
                     if n_components == 2:
                         # plot_2d(embedding, labels, title)
