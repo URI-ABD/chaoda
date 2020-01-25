@@ -1,20 +1,16 @@
 import os
 import pickle
-from typing import List, Dict
-from threading import Thread
 from subprocess import run
-from typing import List, Dict
+from threading import Thread
+from typing import Dict, List
 
-import umap
 import numpy as np
-import scipy.io
-
+import umap
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 from mpl_toolkits.mplot3d import Axes3D
 
-
-DATASETS = {
+DATASETS: Dict = {
     'mnsit': 'https://www.dropbox.com/s/n3wurjt8v9qi6nc/mnist.mat?dl=0',
     'cover': 'https://www.dropbox.com/s/awx8iuzbu8dkxf1/cover.mat?dl=0',
     'letter': 'https://www.dropbox.com/s/rt9i95h9jywrtiy/letter.mat?dl=0',
@@ -34,9 +30,9 @@ def min_max_normalization(data):
 
 def read_data(dataset: str, normalize: bool = False):
     filename = f'../data/{dataset}/{dataset}.mat'
-    except FileNotFoundError:
+    if not os.path.exists(filename):
         run(['wget', DATASETS[dataset], '-O', f'../data/{dataset}/{dataset}.mat'])
-    filename = f'../data/{dataset}/{dataset}.mat'
+
     data_dict: Dict = {}
     try:
         import scipy.io
@@ -47,7 +43,6 @@ def read_data(dataset: str, normalize: bool = False):
             for k, v in infile.items():
                 if k in ['X', 'y']:
                     data_dict[k] = np.asarray(v, dtype=np.float64).T
-
 
     data = np.asarray(data_dict['X'], dtype=np.float64)
     labels = np.asarray(data_dict['y'], dtype=np.int8)
@@ -118,7 +113,7 @@ def plot_3d(
     plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
     plt.margins(0, 0, 0)
 
-    def _draw(asimuth):
+    def _draw(azimuth):
         ax.view_init(elev=10, azim=azimuth)
         plt.savefig(folder + f'{azimuth:03d}.png', bbox_inches='tight', pad_inches=0)
 
@@ -155,16 +150,16 @@ def make_dirs(datasets: List[str]):
 
 
 def main():
-    datasets = DATASETS.keys()
+    datasets = list(DATASETS.keys())
     make_dirs(datasets)
 
     metrics = [
         'euclidean',
-        # 'manhattan',
-        # 'cosine',
+        'manhattan',
+        'cosine',
     ]
 
-    for dataset in datasets:
+    for dataset in ['http']:
         normalize = dataset not in ['mnist']
         data, labels = read_data(dataset, normalize)
         for metric in metrics:
@@ -174,11 +169,12 @@ def main():
                     embedding = make_umap(data, n_neighbors, n_components, metric, filename)
                     title = f'{dataset}-{metric}-{n_neighbors}'
                     if n_components == 3:
-                        # folder = f'../data/{dataset}/frames/{metric}-'
-                        # plot_3d(embedding, labels, title, folder)
+                        folder = f'../data/{dataset}/frames/{metric}-'
+                        plot_3d(embedding, labels, title, folder)
                         pass
                     if n_components == 2:
-                        plot_2d(embedding, labels, title)
+                        # plot_2d(embedding, labels, title)
+                        pass
 
     return
 
