@@ -38,9 +38,8 @@ def k_nearest_neighbors_anomalies(graph: Graph) -> Dict[int, float]:
     """
     manifold = graph.manifold
     data = manifold.data
-    sample = list(map(int, np.random.choice(data.shape[0], 100)))
-    sample.extend([i for i in range(int(data.shape[0] * 0.99), int(data.shape[0]))])
-    sample = sorted(list(set(sample)))
+
+    sample = sorted(list(map(int, np.random.choice(data.shape[0], 1000))))
     knn = {s: list(manifold.find_knn(manifold.data[s], 100).items()) for s in sample}
     scores = {i: sum([distances[k][1] for k in range(0, 100, 10)]) for i, distances in knn.items()}
     return normalize(scores)
@@ -258,14 +257,17 @@ def main():
         # 'subgraph_cardinality': subgraph_cardinality_anomalies,
     }
     for dataset in DATASETS.keys():
-        # if dataset not in ['mnist']:
-        #     continue
+        if dataset in ['mnist']:
+            continue
         for metric in ['euclidean', 'manhattan', 'cosine']:
             np.random.seed(42)
             random.seed(42)
             data, labels = read_data(dataset)
 
-            manifold: Manifold = Manifold(data, metric)
+            if metric == 'manhattan':
+                manifold = Manifold(data, 'cityblock')
+            else:
+                manifold = Manifold(data, metric)
             if not os.path.exists(f'../logs'):
                 os.mkdir(f'../logs')
 
