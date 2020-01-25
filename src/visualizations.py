@@ -1,8 +1,9 @@
 import os
 import pickle
-from typing import List
+from typing import List, Dict
 from threading import Thread
 from subprocess import run
+from typing import List, Dict
 
 import umap
 import numpy as np
@@ -24,20 +25,33 @@ DATASETS = {
 def min_max_normalization(data):
     for i in range(data.shape[1]):
         min_x, max_x = np.min(data[:, i]), np.max(data[:, i])
-        data[:, i] = (data[:, i] - min_x) / (max_x - min_x)
+        if min_x == max_x:
+            data[:, i] = 0.5
+        else:
+            data[:, i] = (data[:, i] - min_x) / (max_x - min_x)
     return data
 
 
 def read_data(dataset: str, normalize: bool = False):
-    try:
-        data_dict = scipy.io.loadmat(f'../data/{dataset}/{dataset}.mat')
+    filename = f'../data/{dataset}/{dataset}.mat'
     except FileNotFoundError:
         run(['wget', DATASETS[dataset], '-O', f'../data/{dataset}/{dataset}.mat'])
-        data_dict = scipy.io.loadmat(f'../data/{dataset}/{dataset}.mat')
+    filename = f'../data/{dataset}/{dataset}.mat'
+    data_dict: Dict = {}
+    try:
+        import scipy.io
+        data_dict = scipy.io.loadmat(filename)
+    except NotImplementedError:
+        import h5py
+        with h5py.File(filename, 'r') as infile:
+            for k, v in infile.items():
+                if k in ['X', 'y']:
+                    data_dict[k] = np.asarray(v, dtype=np.float64).T
 
 
     data = np.asarray(data_dict['X'], dtype=np.float64)
     labels = np.asarray(data_dict['y'], dtype=np.int8)
+    print(data.shape, labels.shape)
 
     if normalize is True:
         data = min_max_normalization(data)
@@ -95,7 +109,6 @@ def plot_3d(
         dpi=128,
 ):
     x, y, z = data[:, 0], data[:, 1], data[:, 2]
-    plt.clf()
     plt.close('all')
     fig = plt.figure(figsize=figsize, dpi=dpi)
     ax = fig.add_subplot(111, projection='3d')
@@ -147,8 +160,8 @@ def main():
 
     metrics = [
         'euclidean',
-        'manhattan',
-        'cosine',
+        # 'manhattan',
+        # 'cosine',
     ]
 
     for dataset in datasets:
@@ -156,13 +169,16 @@ def main():
         data, labels = read_data(dataset, normalize)
         for metric in metrics:
             for n_neighbors in [32]:
-                for n_components in [3]:
+                for n_components in [2, 3]:
                     filename = f'../data/{dataset}/umap/{n_neighbors}-{n_components}d-{metric}.pickle'
                     embedding = make_umap(data, n_neighbors, n_components, metric, filename)
+                    title = f'{dataset}-{metric}-{n_neighbors}'
                     if n_components == 3:
-                        folder = f'../data/{dataset}/frames/{metric}-'
-                        title = f'{dataset}-{metric}-{n_neighbors}'
-                        plot_3d(embedding, labels, title, folder)
+                        # folder = f'../data/{dataset}/frames/{metric}-'
+                        # plot_3d(embedding, labels, title, folder)
+                        pass
+                    if n_components == 2:
+                        plot_2d(embedding, labels, title)
 
     return
 
