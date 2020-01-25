@@ -260,6 +260,7 @@ def main():
         if dataset in ['mnist']:
             continue
         for metric in ['euclidean', 'manhattan', 'cosine']:
+            print(f'\ndataset: {dataset}, metric: {metric}')
             np.random.seed(42)
             random.seed(42)
             data, labels = read_data(dataset)
@@ -277,19 +278,22 @@ def main():
                 with open(filepath, 'rb') as infile:
                     manifold = manifold.load(infile, data)
             else:
-                manifold.build(
-                    criterion.MaxDepth(max_depth),
-                    criterion.MinPoints(min_points),
-                )
+                try:
+                    manifold.build(
+                        criterion.MaxDepth(max_depth),
+                        criterion.MinPoints(min_points),
+                    )
+                except:
+                    pass
                 with open(filepath, 'wb') as infile:
                     manifold.dump(infile)
 
-            print(f'\ndataset: {dataset}, metric: {metric}')
             for depth in range(0, manifold.depth + 1):
                 print(f'depth: {depth},'
                       f' num_subgraphs: {len(manifold.graphs[depth].subgraphs)},'
                       f' num_clusters: {len(manifold.graphs[depth].clusters.keys())}')
                 for method in methods.keys():
+                    print(f'method: {method}')
                     if method in ['n_points_in_ball', 'k_nearest'] and depth < manifold.depth:
                         continue
                     anomalies = methods[method](manifold.graphs[depth])
