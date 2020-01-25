@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 DATASETS: Dict = {
-    'mnsit': 'https://www.dropbox.com/s/n3wurjt8v9qi6nc/mnist.mat?dl=0',
+    'mnist': 'https://www.dropbox.com/s/n3wurjt8v9qi6nc/mnist.mat?dl=0',
     'cover': 'https://www.dropbox.com/s/awx8iuzbu8dkxf1/cover.mat?dl=0',
     'letter': 'https://www.dropbox.com/s/rt9i95h9jywrtiy/letter.mat?dl=0',
     'http': 'https://www.dropbox.com/s/iy9ucsifal754tp/http.mat?dl=0',
