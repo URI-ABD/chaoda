@@ -280,3 +280,6 @@ TSWLatexianTemp*
 .vscode
 data
 *.zip
+*/__pycache__
+__pycache__
+logs
