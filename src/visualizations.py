@@ -46,7 +46,6 @@ def read_data(dataset: str, normalize: bool = False):
 
     data = np.asarray(data_dict['X'], dtype=np.float64)
     labels = np.asarray(data_dict['y'], dtype=np.int8)
-    print(data.shape, labels.shape)
 
     if normalize is True:
         data = min_max_normalization(data)
@@ -161,7 +160,7 @@ def main():
         'cosine',
     ]
 
-    for dataset in ['http']:
+    for dataset in datasets:
         normalize = dataset not in ['mnist']
         data, labels = read_data(dataset, normalize)
         for metric in metrics:
@@ -175,7 +174,7 @@ def main():
                         plot_3d(dataset, metric, embedding, labels, title, folder)
                         pass
                     if n_components == 2:
-                        # plot_2d(embedding, labels, title)
+                        plot_2d(embedding, labels, title)
                         pass
 
     return
