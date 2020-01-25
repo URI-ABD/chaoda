@@ -258,9 +258,9 @@ def main():
         # 'subgraph_cardinality': subgraph_cardinality_anomalies,
     }
     for dataset in DATASETS.keys():
-        if dataset not in ['mnist']:
-            continue
-        for metric in ['euclidean']:
+        # if dataset not in ['mnist']:
+        #     continue
+        for metric in ['euclidean', 'manhattan', 'cosine']:
             np.random.seed(42)
             random.seed(42)
             data, labels = read_data(dataset)
