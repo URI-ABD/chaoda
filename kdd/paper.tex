@@ -1,0 +1,128 @@
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{naturalnames}{hyperref}
+\documentclass[sigconf]{acmart}
+
+% \usepackage{arxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+% \usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{graphicx}       % images
+\usepackage{mathtools}
+\usepackage{parselines}
+% \usepackage{biblatex}
+\usepackage{verbatim}
+
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+    \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+%% Rights management information.  This information is sent to you
+%% when you complete the rights form.  These commands have SAMPLE
+%% values in them; it is your responsibility as an author to replace
+%% the commands and values with those provided to you when you
+%% complete the rights form.
+\setcopyright{acmcopyright}
+\copyrightyear{2020}
+\acmYear{2020}
+\acmDOI{X}
+
+%% These commands are for a PROCEEDINGS abstract or paper.
+\acmConference[KDD '20]{KDD '20}{X}{X}
+\acmBooktitle{KDD '20}
+\acmPrice{15.00}
+\acmISBN{978-1-4503-XXXX-X/18/06}
+
+
+\begin{document}
+\title{CHESS: Anomaly Detection}
+
+\author{Thomas~J.~Howard~III}
+\authornote{These authors contributed equally to this research.}
+\email{thoward27@uri.edu}
+\affiliation{%
+  \institution{Computer Science and Statistics  University of Rhode Island}
+  \city{Kingston}
+  \state{RI}
+  \postcode{02881}
+}
+
+\author{Najib~Ishaq}
+\authornotemark[1]
+\email{najib\_ishaq@zoho.com}
+\affiliation{%
+  \institution{Computer Science and Statistics  University of Rhode Island}
+  \city{Kingston}
+  \state{RI}
+  \postcode{02881}
+}
+
+\author{Noah~M.~Daniels}
+\email{noah\_daniels@uri.edu}
+\affiliation{%
+  \institution{Computer Science and Statistics  University of Rhode Island}
+  \city{Kingston}
+  \state{RI}
+  \postcode{02881}
+}
+
+\renewcommand{\shortauthors}{Howard and Ishaq, et al.}
+
+\begin{abstract}
+In this paper we use CHESS for introspective anomaly detection.
+Using the underlying clustering mechanism from CHESS, along with some manually supplied stopping criteria, we present strong evidence that CHESS is able to accurately map the underlying manifold of the data and that we are able to use this manifold and its inherent properties to successfully flag anomalous data.
+We empirically demonstrate the effectiveness of our method using several synthetic data sets.
+Finally, we explore some future opportunities that could greatly increase the scope of this work.
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+ <concept>
+  <concept_id>10010520.10010553.10010562</concept_id>
+  <concept_desc>Computer systems organization~Embedded systems</concept_desc>
+  <concept_significance>500</concept_significance>
+ </concept>
+ <concept>
+  <concept_id>10010520.10010575.10010755</concept_id>
+  <concept_desc>Computer systems organization~Redundancy</concept_desc>
+  <concept_significance>300</concept_significance>
+ </concept>
+ <concept>
+  <concept_id>10010520.10010553.10010554</concept_id>
+  <concept_desc>Computer systems organization~Robotics</concept_desc>
+  <concept_significance>100</concept_significance>
+ </concept>
+ <concept>
+  <concept_id>10003033.10003083.10003095</concept_id>
+  <concept_desc>Networks~Network reliability</concept_desc>
+  <concept_significance>100</concept_significance>
+ </concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Computer systems organization~Embedded systems}
+\ccsdesc[300]{Computer systems organization~Redundancy}
+\ccsdesc{Computer systems organization~Robotics}
+\ccsdesc[100]{Networks~Network reliability}
+
+\keywords{
+Anomaly Detection, Outlier Detection, Novelty Detection, Manifold Learning
+}
+
+\maketitle
+
+\input{source/introduction.tex}
+\input{source/related-works.tex}
+\input{source/methods.tex}
+\input{source/results.tex}
+
+% \clearpage
+\input{source/conclusion.tex}
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+\end{document}

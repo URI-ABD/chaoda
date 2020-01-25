@@ -1,0 +1,92 @@
+\section{Related Works}
+\label{sec:related_works}
+
+In this section, we consider distance-based, clustering-based, and graph-based approaches.
+
+\subsection{Clustering-Based Approaches}
+
+Clustering data is universally centered around techniques for grouping points in a way that provides value.
+This is done by assigning similar points to the same cluster.
+Once these clusters are assigned, they can be used to check if there are any outliers present within the data.
+The clusters can also be used to check if new points are anomalous.
+For example, for any given point, one can check if it lies within, or near, any cluster; if not, the point can be marked as an anomaly.
+To determine if the data contain any outliers, one can also examine the cardinality of various clusters and/or how dissimilar the clusters are to each other.
+For example, if many clusters of large cardinality are present, along with relatively few clusters of very low cardinality, the clusters of low cardinality may contain outliers.
+
+We summarize several major approaches to clustering data.
+Note that there have been relatively few advancements in clustering techniques over the past decade~\cite{wang_progress_2019}. This may explain, or by attributable to, the observably poor performance, so far, of clustering data in high dimensional space~\cite{zhang_advancements_2013}.
+
+\subsubsection{Distance-Based Clustering}
+
+Distance-based clustering approaches rely on some distance measure to partition the data into some number of clusters.
+Within this approach, the numbers of clusters and/or the sizes of clusters are predefined: either user-specified, or chosen at random~\cite{wang_progress_2019}.
+Some examples of distance-based clustering are: 
+K-Means~\cite{macqueen_methods_nodate}, 
+PAM~\cite{kaufman_finding_nodate}, 
+CLARANS~\cite{ng_efficient_nodate}, 
+CLARA~\cite{kaufman_finding_nodate}, 
+etc.
+
+\subsubsection{Hierarchical Clustering}
+
+Hierarchical clustering methods typically utilize a tree-like structure, where points are allocated into leaf nodes~\cite{wang_progress_2019}.
+These tree-like structures can be created bottom-up (agglomerative clustering), or top-down (divisive clustering)~\cite{rakesh_agrawal_automatic_1998}.
+The major drawback of these methods is the high cost of pairwise distance computations at each level of the tree.
+Examples of hierarchical clustering include: 
+MST~\cite{charles_zahn_graph_1971}, 
+CURE~\cite{noauthor_cure:_nodate}, 
+CHAMELEON~\cite{karypis_chameleon:_nodate}, 
+etc.
+
+\subsubsection{Density-Based Clustering}
+
+Density-Based clustering methods rely on finding areas of high point-density separated by areas of low point-density.
+These algorithms generally do not work well when normal data are sparse.
+Some examples of density-based clustering algorithms are: 
+DBSCAN~\cite{ester_density-based_nodate}, 
+DENCLUE~\cite{Hinneburg1998Effic-5816}, 
+etc.
+
+\subsubsection{Grid-Based Clustering}
+
+Grid-based clustering works via segmenting the entire space into a finite number of cells and then iterating over the cells to find regions of higher density.
+Utilizing the grid structure for clustering means that these algorithms typically scale better to larger datasets.
+Some examples of grid-based clustering: 
+STING~\cite{sting:wang}, 
+Wavecluster~\cite{Wavecluster:Sheikholeslami:2000}, 
+DCluster,  % Paper does not exist????
+CLIQUE~\cite{rakesh_agrawal_automatic_1998}, 
+etc.
+
+\subsection{Distanced-Based Approaches}
+
+Distance-based methods attempt to find anomalous points via distance comparisons.
+These methods largely employ k-Nearest Neighbors as their substrate~\cite{wang_progress_2019}.
+They proceed in the following, slightly different, ways:
+
+\begin{enumerate}
+    \item Points with less than $p$ other points within a distance $d$ are outliers.
+    \item The top $n$ points whose distances to their $k^{th}$-nearest neighbor are the greatest are outliers.
+    \item The top $n$ points whose average distances to their $k^{th}$-nearest neighbor are the greatest are outliers.
+\end{enumerate}
+
+
+% CLIQUE Summary
+\begin{comment}
+CLIQUE scales linearly with input records, but does identify subspaces within the original dataset.
+CLIQUE clusters based on subspaces it identifies via density estimates, it does not cluster in the full dimensionality of the input data.
+This seems to be the premonition of manifold finding.
+Restricted look to subspaces of the original set, not fictitious subspaces dreamed up via techniques such as Principle Component Analysis.
+CLIQUE finds areas of higher density, which are the clusters.
+Begins by partitioning the full space into units then estimates density within that cell.
+All clusters are axis-parallel hyper-rectangles. Each cluster is a union of adjacent dense cells.
+Compact representation is then found by covering the cluster with a minimal number of maximal, possibly overlapping rectangles and describing the cluster as the union of said rectangles.
+CLIQUE is also tolerant to incomplete data points.
+Requires density threshold and number of intervals over the full space as parameters.
+Categorical data is ordered arbitrarily, with an empty interval placed in-between ever pair.
+Is deterministic, always yields the same results.
+Runs in $O(c^k + m k)$ where $c$ is some constant, $k$ is the dimensionality, and $m$ is the number of points.
+Tested on dimensionality up to 50.
+In experiments run for this paper, BIRCH failed starting at 20 dimensions, DBSCAN at 8, CLIQUE made it to 50 without failure.
+\cite{rakesh_agrawal_automatic_1998}
+\end{comment}

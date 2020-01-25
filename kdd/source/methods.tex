@@ -1,0 +1,73 @@
+\section{Methods}
+\label{sec:methods}
+
+For this initial work, we have extended CHESS to a Manifold Learning algorithm.
+We use this method to address Anomaly and Outlier Detection.
+We use Distance-Based, Clustering-Based and Graph-Based procedures for detecting anomalous and outlier points/clusters.
+
+% TODO: Transition these definitions to algorithms
+
+\subsection{Distance-Based Outliers}
+
+\begin{enumerate}
+    \item Sort all points $p \in \mathbb{P}$, where $\mathbb{P}$ is the data, by $f \equiv |B_D(p, r)|$ in ascending order.
+    \begin{itemize}
+        \item If needed, increase $r$ to break ties.
+        \item The points with the smallest values of $f$ are the outliers.
+    \end{itemize}
+    \item Sort all points $p \in \mathbb{P}$ in descending order by the distance to their $k^{th}$ nearest neighbor.
+    \begin{itemize}
+        \item Consider how this distance changes as $k$ in increased.
+        \item The points with the highest such distances are the outliers.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Hierarchical-Clustering-Based Outliers}
+
+\begin{enumerate}
+    \item For a $parent$ cluster and its $left$ and $right$ child-clusters (assume without loss of generality that $|left| \leq |right|)$ define $f \equiv \frac{|left|}{|parent|}$. If $f \ll 0.5$ then points in the $|left|$ cluster are outliers.
+    \begin{itemize}
+        \item Use this definition recursively down the tree. The number of levels in the tree at which a point is labelled an outlier gives us a measure of the ``anomalousness'' of that point.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Graph-Based Outliers}
+
+\begin{enumerate}
+    \item The Outrank algorithm~\cite{moonesinghe_outrank:_2008} i.e. on a given graph-representation of data, initiate a random walk. The clusters that are visited least often are the outlier clusters.
+    \item Define the ``k-neighborhood'' of a clusters $c$ as the clusters that can be reached from $c$ in $k$ steps. Investigate how $|k-neighborhood|$ increases as $k$ in increased.
+    \begin{itemize}
+        \item $|k-neighborhood|$ should increase by $k^d$ where $d$ is \textit{local fractal dimension} of the data at the length-scale of the radii of the clusters that form the graph.
+        \item If the increase in $|k-neighborhood|$ of a cluster $c$ does not keep pace with $k^d$ as $k$ is increased then $c$ can be considered an outlier cluster.
+    \end{itemize}
+    \item Consider the connected components of the graph at a depth in the tree just before the graph shatters into many small components or isolated clusters.
+    \begin{itemize}
+        \item If a component contains too few points/clusters then those points/clusters can be considered outliers.
+        \item If a small component is connected to a larger component with a small number of edges then the smaller component may contain outliers.
+    \end{itemize}
+\end{enumerate}
+
+Due to the wide range of possible measurements for ``anomalousness'' from our methods, we normalize our measurements.
+
+\subsection{Normalization Methods}
+
+\begin{enumerate}
+    \item Min-Max Scaling:
+    \begin{gather}
+        x^{\prime} = \frac{x - x_{min}}{x_{max} - x_{min}}
+        \label{sec:methods:min-max-normalizationn}
+    \end{gather}
+    
+    \item Mean-Scaling:
+    \begin{gather}
+        x^{\prime} = \frac{x - \overline{x}}{x_{max} - x_{min}}
+        \label{sec:methods:mean-scaling}
+    \end{gather}
+    
+    \item z-Score Standardization:
+    \begin{gather}
+        x^{\prime} = \frac{x - \overline{x}}{\sigma}
+        \label{sec:methods:z-score}
+    \end{gather}
+
+\end{enumerate}
