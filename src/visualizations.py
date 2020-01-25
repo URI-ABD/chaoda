@@ -1,7 +1,6 @@
 import os
 import pickle
 from subprocess import run
-from threading import Thread
 from typing import Dict, List
 
 import numpy as np
@@ -30,9 +29,6 @@ def min_max_normalization(data):
 
 def read_data(dataset: str, normalize: bool = False):
     filename = f'../data/{dataset}/{dataset}.mat'
-    if not os.path.exists(filename):
-        run(['wget', DATASETS[dataset], '-O', f'../data/{dataset}/{dataset}.mat'])
-
     data_dict: Dict = {}
     try:
         import scipy.io
@@ -95,8 +91,6 @@ def plot_2d(
 
 
 def plot_3d(
-        dataset: str,
-        metric: str,
         data: np.ndarray,
         labels: np.ndarray,
         title: str,
@@ -107,32 +101,20 @@ def plot_3d(
     x, y, z = data[:, 0], data[:, 1], data[:, 2]
     plt.close('all')
 
-    def _draw(azimuth):
-        fig = plt.figure(figsize=figsize, dpi=dpi)
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(x, y, z, c=[float(d) for d in labels], s=10. * labels + .1, cmap='Dark2')
-        plt.title(title)
-        plt.gca().set_axis_off()
-        plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-        plt.margins(0, 0, 0)
+    fig = plt.figure(figsize=figsize, dpi=dpi)
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(x, y, z, c=[float(d) for d in labels], s=(10. * labels + .1), cmap='Dark2')
+    plt.title(title)
+    plt.gca().set_axis_off()
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0, 0)
 
+    for azimuth in range(0, 360):
         ax.view_init(elev=10, azim=azimuth)
         plt.savefig(folder + f'{azimuth:03d}.png', bbox_inches='tight', pad_inches=0)
 
-    threads = [Thread(target=_draw, args=(azimuth,)) for azimuth in range(0, 360)]
-    [t.start() for t in threads]
-    [t.join() for t in threads]
     plt.close('all')
-    run([
-        'ffmpeg', 
-        '-framerate', '30', 
-        '-i', f'{dataset}/frames/{metric}-%03d.png',
-        '-c:v', 'libx264', 
-        '-profile:v', 'high', 
-        '-crf', '20', 
-        '-pix_fmt', 'yuv420p', 
-        f'{dataset}/{metric}-30fps.mp4'
-    ])
+
     return
 
 
@@ -147,7 +129,9 @@ def make_dirs(datasets: List[str]):
             if not os.path.exists(f'../data/{dataset}/{folder}'):
                 os.mkdir(f'../data/{dataset}/{folder}')
 
-    # TODO: Figure out how to also download data here.
+        filename = f'../data/{dataset}/{dataset}.mat'
+        if not os.path.exists(filename):
+            run(['wget', DATASETS[dataset], '-O', filename])
     return
 
 
@@ -157,16 +141,17 @@ def main():
 
     metrics = [
         'euclidean',
-        'manhattan',
-        'cosine',
+        # 'manhattan',
+        # 'cosine',
     ]
 
-    for dataset in datasets:
+    for dataset in ['http']:
         normalize = dataset not in ['mnist']
         data, labels = read_data(dataset, normalize)
+        # data, labels = data[: 10_000, :], labels[: 10_000]
         for metric in metrics:
             for n_neighbors in [32]:
-                for n_components in [2, 3]:
+                for n_components in [3]:
                     filename = f'../data/{dataset}/umap/{n_neighbors}-{n_components}d-{metric}.pickle'
                     if data.shape[1] > n_components:
                         embedding = make_umap(data, n_neighbors, n_components, metric, filename)
@@ -175,7 +160,19 @@ def main():
                     title = f'{dataset}-{metric}-{n_neighbors}'
                     if n_components == 3:
                         folder = f'../data/{dataset}/frames/{metric}-'
-                        plot_3d(dataset, metric, embedding, labels, title, folder)
+                        plot_3d(embedding, labels, title, folder)
+
+                        # run([
+                        #     'ffmpeg',
+                        #     '-framerate', '30',
+                        #     '-i', f'{dataset}/frames/{metric}-%03d.png',
+                        #     '-c:v', 'libx264',
+                        #     '-profile:v', 'high',
+                        #     '-crf', '20',
+                        #     '-pix_fmt', 'yuv420p',
+                        #     f'{dataset}/{metric}-30fps.mp4'
+                        # ])
+
                         pass
                     if n_components == 2:
                         plot_2d(embedding, labels, title)
