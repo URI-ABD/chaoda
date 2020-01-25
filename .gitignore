@@ -274,3 +274,9 @@ TSWLatexianTemp*
 
 # Makeindex log files
 *.lpz
+
+.anomaly
+.idea
+.vscode
+data
+*.zip
