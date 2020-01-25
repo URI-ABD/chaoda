@@ -106,15 +106,16 @@ def plot_3d(
 ):
     x, y, z = data[:, 0], data[:, 1], data[:, 2]
     plt.close('all')
-    fig = plt.figure(figsize=figsize, dpi=dpi)
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(x, y, z, c=[float(d) for d in labels], s=10. * labels + .1, cmap='Dark2')
-    plt.title(title)
-    plt.gca().set_axis_off()
-    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
-    plt.margins(0, 0, 0)
 
     def _draw(azimuth):
+        fig = plt.figure(figsize=figsize, dpi=dpi)
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(x, y, z, c=[float(d) for d in labels], s=10. * labels + .1, cmap='Dark2')
+        plt.title(title)
+        plt.gca().set_axis_off()
+        plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+        plt.margins(0, 0, 0)
+
         ax.view_init(elev=10, azim=azimuth)
         plt.savefig(folder + f'{azimuth:03d}.png', bbox_inches='tight', pad_inches=0)
 
@@ -167,7 +168,10 @@ def main():
             for n_neighbors in [32]:
                 for n_components in [2, 3]:
                     filename = f'../data/{dataset}/umap/{n_neighbors}-{n_components}d-{metric}.pickle'
-                    embedding = make_umap(data, n_neighbors, n_components, metric, filename)
+                    if data.shape[1] > n_components:
+                        embedding = make_umap(data, n_neighbors, n_components, metric, filename)
+                    else:
+                        embedding = data
                     title = f'{dataset}-{metric}-{n_neighbors}'
                     if n_components == 3:
                         folder = f'../data/{dataset}/frames/{metric}-'
