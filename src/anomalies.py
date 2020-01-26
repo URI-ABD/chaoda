@@ -2,6 +2,7 @@ import os
 import random
 from collections import deque
 from typing import Dict, Set, List
+import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,7 @@ from chess.manifold import Manifold, Graph, Cluster
 # noinspection PyUnresolvedReferences
 from mpl_toolkits.mplot3d import Axes3D
 from visualizations import DATASETS, read_data, make_dirs
+from sklearn.metrics import roc_curve, auc
 
 
 def normalize(anomalies: Dict[int, float]) -> Dict[int, float]:
@@ -164,9 +166,27 @@ def plot_histogram(
         plt.show()
     return
 
+def plot_roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
+    y_true, y_score = [], []
+    [(y_true.append(true_labels[k]), y_score.append(v)) for k, v in anomalies.items()]
+    fpr, tpr = roc_curve(y_true, y_score)
+
+    plt.figure()
+    lw = 2
+    plt.plot(fpr, tpr, color='darkorange',
+            lw=lw, label='ROC curve (area = %0.2f)' % auc(fpr, tpr))
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    plt.show()
+
 
 def plot_confusion_matrix(
-        true_labels: List[int],
+        true_labels: List[bool],
         anomalies: Dict[int, float],
         dataset: str,
         metric: str,
@@ -174,13 +194,14 @@ def plot_confusion_matrix(
         depth: int,
         save: bool,
 ):
-    p = float(sum([1 for k in anomalies.keys() if true_labels[k] == 1]))
-    n = float(sum([1 for k in anomalies.keys() if true_labels[k] == 0]))
+    p = float(len([k for k in anomalies.keys() if true_labels[k] == 1]))
+    n = float(len([k for k in anomalies.keys() if true_labels[k] == 0]))
 
-    threshold = float(np.percentile(list(anomalies.values()), 0.95))
-    # threshold = 0.8
-    tp = float(sum([1 if v > threshold else 0 for k, v in anomalies.items() if true_labels[k] == 1]))
-    tn = float(sum([1 if v > threshold else 0 for k, v in anomalies.items() if true_labels[k] == 0]))
+    threshold = float(np.percentile(list(anomalies.values()), 95))
+    values = [float(v) for v in anomalies.values()]
+    print(threshold, min(values), max(values), np.mean(values), np.std(np.asarray(values)))
+    tp = float(sum([v > threshold for k, v in anomalies.items() if true_labels[k] == 1]))
+    tn = float(sum([v < threshold for k, v in anomalies.items() if true_labels[k] == 0]))
 
     tpr, tnr = tp / p, tn / n
     fpr, fnr = 1 - tnr, 1 - tpr
@@ -257,9 +278,9 @@ def main():
         # 'subgraph_cardinality': subgraph_cardinality_anomalies,
     }
     for dataset in DATASETS.keys():
-        if dataset in ['mnist']:
+        if dataset not in ['mnist']:
             continue
-        for metric in ['euclidean', 'manhattan', 'cosine']:
+        for metric in ['euclidean']:
             print(f'\ndataset: {dataset}, metric: {metric}')
             np.random.seed(42)
             random.seed(42)
@@ -283,8 +304,8 @@ def main():
                         criterion.MaxDepth(max_depth),
                         criterion.MinPoints(min_points),
                     )
-                except:
-                    pass
+                except Exception as e:
+                    logging.error(e)
                 with open(filepath, 'wb') as infile:
                     manifold.dump(infile)
 
