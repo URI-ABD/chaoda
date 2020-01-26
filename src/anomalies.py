@@ -166,15 +166,16 @@ def plot_histogram(
         plt.show()
     return
 
+
 def plot_roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
     y_true, y_score = [], []
     [(y_true.append(true_labels[k]), y_score.append(v)) for k, v in anomalies.items()]
-    fpr, tpr = roc_curve(y_true, y_score)
+    fpr, tpr, _ = roc_curve(y_true, y_score)
 
-    plt.figure()
+    plt.clf()
+    fig = plt.figure()
     lw = 2
-    plt.plot(fpr, tpr, color='darkorange',
-            lw=lw, label='ROC curve (area = %0.2f)' % auc(fpr, tpr))
+    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % auc(fpr, tpr))
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
@@ -182,7 +183,14 @@ def plot_roc_curve(true_labels, anomalies, dataset, metric, method, depth, save)
     plt.ylabel('True Positive Rate')
     plt.title('Receiver operating characteristic example')
     plt.legend(loc="lower right")
-    plt.show()
+
+    if save is True:
+        filepath = f'../data/{dataset}/plots/{method}/{metric}-{depth}-roc_curve.png'
+        make_folders(dataset, method)
+        fig.savefig(filepath)
+    else:
+        plt.show()
+    return
 
 
 def plot_confusion_matrix(
@@ -278,7 +286,7 @@ def main():
         # 'subgraph_cardinality': subgraph_cardinality_anomalies,
     }
     for dataset in DATASETS.keys():
-        if dataset not in ['mnist']:
+        if dataset not in ['http']:
             continue
         for metric in ['euclidean']:
             print(f'\ndataset: {dataset}, metric: {metric}')
@@ -326,7 +334,7 @@ def main():
                         depth=depth,
                         save=True,
                     )
-                    plot_confusion_matrix(
+                    plot_roc_curve(
                         true_labels=labels,
                         anomalies=anomalies,
                         dataset=dataset,
