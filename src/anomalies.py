@@ -41,9 +41,9 @@ def k_nearest_neighbors_anomalies(graph: Graph) -> Dict[int, float]:
     manifold = graph.manifold
     data = manifold.data
 
-    sample = sorted(list(map(int, np.random.choice(data.shape[0], 1000))))
-    knn = {s: list(manifold.find_knn(manifold.data[s], 100).items()) for s in sample}
-    scores = {i: sum([distances[k][1] for k in range(0, 100, 10)]) for i, distances in knn.items()}
+    sample = sorted(list(map(int, np.random.choice(data.shape[0], int(data.shape[0] * 1), replace=False))))
+    knn = {s: list(manifold.find_knn(manifold.data[s], 10).items()) for s in sample}
+    scores = {i: sum([distances[k][1] for k in range(0, 10)]) for i, distances in knn.items()}
     return normalize(scores)
 
 
@@ -61,7 +61,10 @@ def hierarchical_anomalies(graph: Graph) -> Dict[int, float]:
                 f = float(len(cluster.argpoints)) / len(parent.argpoints)
                 if f < 0.25:
                     for p in cluster.argpoints:
-                        results[p][-1] = 1 / depth
+                        results[p][-1] = depth
+            elif cluster.name[-1] == '0' and results[cluster.argpoints[0]][-1] > 0:
+                for p in cluster.argpoints:
+                        results[p][-1] = depth
 
     results = {k: sum(v) for k, v in results.items()}
     return normalize(results) if results else {}
@@ -77,8 +80,8 @@ def outrank_anomalies(graph: Graph) -> Dict[int, float]:
     anomalies: Dict[int, float] = dict()
     for subgraph in subgraphs:
         results: Dict[Cluster, int] = subgraph.random_walk(
-            steps=max(len(subgraph.clusters.keys()) // 10, 10),
-            walks=max(len(subgraph.clusters.keys()) * 10, 10),
+            steps=1000,  # max(len(subgraph.clusters.keys()) // 10, 10),
+            walks=max(len(subgraph.clusters.keys()), 10),
         )
         anomalies.update({p: v for c, v in results.items() for p in c.argpoints})
 
@@ -280,16 +283,16 @@ def main():
     methods = {
         # 'n_points_in_ball': n_points_in_ball,
         # 'k_nearest': k_nearest_neighbors_anomalies,
-        'hierarchical': hierarchical_anomalies,
-        # 'outrank': outrank_anomalies,
+        # 'hierarchical': hierarchical_anomalies,
+        'outrank': outrank_anomalies,
         # 'k_neighborhood': k_neighborhood_anomalies,
         # 'cluster_cardinality': cluster_cardinality_anomalies,
-        # 'subgraph_cardinality': subgraph_cardinality_anomalies,
+        'subgraph_cardinality': subgraph_cardinality_anomalies,
     }
     for dataset in DATASETS.keys():
-        if dataset not in ['mnist']:
+        if dataset not in ['shuttle']:
             continue
-        for metric in ['euclidean']:
+        for metric in ['euclidean', ]:
             print(f'\ndataset: {dataset}, metric: {metric}')
             np.random.seed(42)
             random.seed(42)
@@ -302,7 +305,7 @@ def main():
             if not os.path.exists(f'../logs'):
                 os.mkdir(f'../logs')
 
-            max_depth, min_points = 100, 1
+            max_depth, min_points = 50, 1
             filepath = f'../logs/{dataset}_{metric}_{max_depth}_{min_points}.pickle'
             if os.path.exists(filepath):
                 with open(filepath, 'rb') as infile:
@@ -318,7 +321,7 @@ def main():
                 with open(filepath, 'wb') as infile:
                     manifold.dump(infile)
 
-            for depth in range(0, manifold.depth + 1):
+            for depth in range(0, manifold.depth + 1, 1):
                 print(f'depth: {depth},'
                       f' num_subgraphs: {len(manifold.graphs[depth].subgraphs)},'
                       f' num_clusters: {len(manifold.graphs[depth].clusters.keys())}')

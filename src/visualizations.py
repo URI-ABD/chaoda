@@ -14,6 +14,18 @@ DATASETS: Dict = {
     'cover': 'https://www.dropbox.com/s/awx8iuzbu8dkxf1/cover.mat?dl=0',
     'letter': 'https://www.dropbox.com/s/rt9i95h9jywrtiy/letter.mat?dl=0',
     'http': 'https://www.dropbox.com/s/iy9ucsifal754tp/http.mat?dl=0',
+    'smtp': 'https://www.dropbox.com/s/dbv2u4830xri7og/smtp.mat?dl=0',
+    'shuttle': 'https://www.dropbox.com/s/mk8ozgisimfn3dw/shuttle.mat?dl=0',
+    'satellite': 'https://www.dropbox.com/s/dpzxp8jyr9h93k5/satellite.mat?dl=0',
+    'mammography': 'https://www.dropbox.com/s/tq2v4hhwyv17hlk/mammography.mat?dl=0',
+    'annthyroid': 'https://www.dropbox.com/s/aifk51owxbogwav/annthyroid.mat?dl=0',
+    'breastw': 'https://www.dropbox.com/s/g3hlnucj71kfvq4/breastw.mat?dl=0',
+    'vowels': 'https://www.dropbox.com/s/pa26odoq6atq9vx/vowels.mat?dl=0',
+    'musk': 'https://www.dropbox.com/s/we6aqhb0m38i60t/musk.mat?dl=0',
+    'satimage-2': 'https://www.dropbox.com/s/hckgvu9m6fs441p/satimage-2.mat?dl=0',
+    'wine': 'https://www.dropbox.com/s/uvjaudt2uto7zal/wine.mat?dl=0',
+    'pendigits': 'https://www.dropbox.com/s/1x8rzb4a0lia6t1/pendigits.mat?dl=0',
+    'optdigits': 'https://www.dropbox.com/s/w52ndgz5k75s514/optdigits.mat?dl=0',
 }
 
 
@@ -145,7 +157,7 @@ def main():
         # 'cosine',
     ]
 
-    for dataset in ['http']:
+    for dataset in ['optdigits']:
         normalize = dataset not in ['mnist']
         data, labels = read_data(dataset, normalize)
         # data, labels = data[: 10_000, :], labels[: 10_000]
@@ -154,13 +166,14 @@ def main():
                 for n_components in [3]:
                     filename = f'../data/{dataset}/umap/{n_neighbors}-{n_components}d-{metric}.pickle'
                     if data.shape[1] > n_components:
-                        embedding = make_umap(data, n_neighbors, n_components, metric, filename)
+                        embedding = data
+                        # embedding = make_umap(data, n_neighbors, n_components, metric, filename)
                     else:
                         embedding = data
                     title = f'{dataset}-{metric}-{n_neighbors}'
                     if n_components == 3:
-                        folder = f'../data/{dataset}/frames/{metric}-'
-                        plot_3d(embedding, labels, title, folder)
+                        # folder = f'../data/{dataset}/frames/{metric}-'
+                        # plot_3d(embedding, labels, title, folder)
 
                         # run([
                         #     'ffmpeg',
@@ -175,7 +188,7 @@ def main():
 
                         pass
                     if n_components == 2:
-                        plot_2d(embedding, labels, title)
+                        # plot_2d(embedding, labels, title)
                         pass
 
     return
