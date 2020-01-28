@@ -49,20 +49,21 @@ def k_nearest_neighbors_anomalies(graph: Graph) -> Dict[int, float]:
 
 def hierarchical_anomalies(graph: Graph) -> Dict[int, float]:
     manifold = graph.manifold
+    depth = list(graph.clusters.keys())[0].depth
     data = manifold.data
 
     results = {i: list() for i in range(data.shape[0])}
-    for graph in manifold.graphs[1:]:
-        for cluster in graph.clusters.keys():
+    for g in manifold.graphs[1: depth]:
+        for cluster in g.clusters.keys():
+            [results[p].append(0) for p in cluster.argpoints]
             if cluster.name[-1] == '1':
                 parent = manifold.select(cluster.name[:-1])
                 f = float(len(cluster.argpoints)) / len(parent.argpoints)
                 if f < 0.25:
-                    [results[p].append(1) for p in cluster.argpoints]
-            elif cluster.name[-1] == '0':
-                [results[p].append(1) for p in cluster.argpoints]
+                    for p in cluster.argpoints:
+                        results[p][-1] = 1 / depth
 
-    results = {k: len(v) for k, v in results.items()}
+    results = {k: sum(v) for k, v in results.items()}
     return normalize(results) if results else {}
 
 
@@ -278,15 +279,15 @@ def main():
     make_dirs(list(DATASETS.keys()))
     methods = {
         # 'n_points_in_ball': n_points_in_ball,
-        'k_nearest': k_nearest_neighbors_anomalies,
+        # 'k_nearest': k_nearest_neighbors_anomalies,
         'hierarchical': hierarchical_anomalies,
-        'outrank': outrank_anomalies,
+        # 'outrank': outrank_anomalies,
         # 'k_neighborhood': k_neighborhood_anomalies,
         # 'cluster_cardinality': cluster_cardinality_anomalies,
         # 'subgraph_cardinality': subgraph_cardinality_anomalies,
     }
     for dataset in DATASETS.keys():
-        if dataset not in ['http']:
+        if dataset not in ['mnist']:
             continue
         for metric in ['euclidean']:
             print(f'\ndataset: {dataset}, metric: {metric}')
@@ -326,14 +327,14 @@ def main():
                     if method in ['n_points_in_ball', 'k_nearest'] and depth < manifold.depth:
                         continue
                     anomalies = methods[method](manifold.graphs[depth])
-                    plot_histogram(
-                        x=[v for _, v in anomalies.items()],
-                        dataset=dataset,
-                        metric=metric,
-                        method=method,
-                        depth=depth,
-                        save=True,
-                    )
+                    # plot_histogram(
+                    #     x=[v for _, v in anomalies.items()],
+                    #     dataset=dataset,
+                    #     metric=metric,
+                    #     method=method,
+                    #     depth=depth,
+                    #     save=True,
+                    # )
                     plot_roc_curve(
                         true_labels=labels,
                         anomalies=anomalies,
