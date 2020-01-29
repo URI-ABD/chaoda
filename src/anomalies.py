@@ -163,8 +163,8 @@ def plot_histogram(
     max_freq = n.max()
     plt.ylim(ymax=np.ceil(max_freq / 10) * 10 if max_freq % 10 else max_freq + 10)
     if save is True:
-        filepath = f'../data/{dataset}/plots/{method}/{metric}-{depth}-histogram.png'
-        make_folders(dataset, method)
+        filepath = f'../data/{dataset}/plots/{metric}/{method}/{depth}-histogram.png'
+        make_folders(dataset, metric, method)
         fig.savefig(filepath)
     else:
         plt.show()
@@ -189,11 +189,20 @@ def plot_roc_curve(true_labels, anomalies, dataset, metric, method, depth, save)
     plt.legend(loc="lower right")
 
     if save is True:
-        filepath = f'../data/{dataset}/plots/{method}/{metric}-{depth}-roc_curve.png'
-        make_folders(dataset, method)
+        filepath = f'../data/{dataset}/plots/{metric}/{method}/{depth}-roc_curve.png'
+        make_folders(dataset, metric, method)
         fig.savefig(filepath)
     else:
         plt.show()
+    
+    csv_filepath = f'../data/{dataset}/plots/{metric}/{method}/roc_curves.csv'
+    if not os.path.exists(csv_filepath):
+        with open(csv_filepath, 'w') as outfile:
+            outfile.write('depth,scores\n')
+    with open(csv_filepath, 'a') as outfile:
+        line = '_'.join([f'{s:.16f}' for i, s in sorted(list(anomalies.items()))])
+        outfile.write(f'{depth},{line}\n')
+    
     return
 
 
@@ -237,19 +246,20 @@ def plot_confusion_matrix(
      for j in range(2)]
 
     if save is True:
-        filepath = f'../data/{dataset}/plots/{method}/{metric}-{depth}-confusion_matrix.png'
-        make_folders(dataset, method)
+        filepath = f'../data/{dataset}/plots/{metric}/{method}/{depth}-confusion_matrix.png'
+        make_folders(dataset, metric, method)
         fig.savefig(filepath)
     else:
         plt.show()
     return
 
 
-def make_folders(dataset, method):
+def make_folders(dataset, metric, method):
     dir_paths = [f'../data',
                  f'../data/{dataset}',
                  f'../data/{dataset}/plots',
-                 f'../data/{dataset}/plots/{method}']
+                 f'../data/{dataset}/plots/{metric}',
+                 f'../data/{dataset}/plots/{metric}/{method}']
     for dir_path in dir_paths:
         if not os.path.exists(dir_path):
             os.mkdir(dir_path)
@@ -283,16 +293,17 @@ def main():
     methods = {
         # 'n_points_in_ball': n_points_in_ball,
         # 'k_nearest': k_nearest_neighbors_anomalies,
-        # 'hierarchical': hierarchical_anomalies,
+        'hierarchical': hierarchical_anomalies,
         'outrank': outrank_anomalies,
-        # 'k_neighborhood': k_neighborhood_anomalies,
-        # 'cluster_cardinality': cluster_cardinality_anomalies,
+        'k_neighborhood': k_neighborhood_anomalies,
+        'cluster_cardinality': cluster_cardinality_anomalies,
         'subgraph_cardinality': subgraph_cardinality_anomalies,
     }
+
     for dataset in DATASETS.keys():
-        if dataset not in ['shuttle']:
+        if dataset in ['mnist']:
             continue
-        for metric in ['euclidean', ]:
+        for metric in ['euclidean', 'manhattan', 'cosine']:
             print(f'\ndataset: {dataset}, metric: {metric}')
             np.random.seed(42)
             random.seed(42)
@@ -305,21 +316,35 @@ def main():
             if not os.path.exists(f'../logs'):
                 os.mkdir(f'../logs')
 
-            max_depth, min_points = 50, 1
-            filepath = f'../logs/{dataset}_{metric}_{max_depth}_{min_points}.pickle'
+            max_depth, min_points = 100, 1
+            filepath = f'../logs/{dataset}-{metric}-{max_depth}-{min_points}.pickle'
             if os.path.exists(filepath):
                 with open(filepath, 'rb') as infile:
                     manifold = manifold.load(infile, data)
             else:
                 try:
-                    manifold.build(
-                        criterion.MaxDepth(max_depth),
-                        criterion.MinPoints(min_points),
-                    )
+                    for d in range(max_depth - 1, 0, -1):
+                        oldfile = f'../logs/{dataset}-{metric}-{d}-{min_points}.pickle'
+                        if os.path.exists(oldfile):
+                            with open(oldfile, 'rb') as infile:
+                                manifold = manifold.load(infile, data)
+                            manifold.build_tree(
+                                criterion.MaxDepth(max_depth),
+                                criterion.MinPoints(min_points),
+                            )
+                            [graph.build_edges() for graph in manifold.graphs[d + 1:]]
+                            break
+                    else:
+                        manifold.build(
+                            criterion.MaxDepth(max_depth),
+                            criterion.MinPoints(min_points),
+                        )
+                    filepath = f'../logs/{dataset}-{metric}-{len(manifold.graphs) - 1}-{min_points}.pickle'
+                    with open(filepath, 'wb') as infile:
+                        # print(f'\n\n SAVING!!!!! \n{filepath} \n\n')
+                        manifold.dump(infile)
                 except Exception as e:
                     logging.error(e)
-                with open(filepath, 'wb') as infile:
-                    manifold.dump(infile)
 
             for depth in range(0, manifold.depth + 1, 1):
                 print(f'depth: {depth},'
@@ -330,6 +355,7 @@ def main():
                     if method in ['n_points_in_ball', 'k_nearest'] and depth < manifold.depth:
                         continue
                     anomalies = methods[method](manifold.graphs[depth])
+                    
                     # plot_histogram(
                     #     x=[v for _, v in anomalies.items()],
                     #     dataset=dataset,
