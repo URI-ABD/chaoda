@@ -23,16 +23,26 @@ def normalize(anomalies: Dict[int, float]) -> Dict[int, float]:
 
 
 def n_points_in_ball(graph: Graph) -> Dict[int, float]:
+    # TODO: Fix
     manifold = graph.manifold
     data = manifold.data
 
-    radius = 0.5
-    results = {i: 0 for i in range(data.shape[0])}
-    while len(results) > 5:
-        results = {i: len(manifold.find_points(data[i], radius)) for i, _ in results.items()}
-        results = dict(sorted(results.items(), key=lambda e: e[1])[:len(results) // 2 + 1])
-        radius /= 2
-    return normalize(results)
+    starting_radius = float(manifold.select('').radius) * (10 ** -2)
+    sample_size = int(data.shape[0] * (0.05 if data.shape[0] > 10_000 else 1.0))
+    print(sample_size)
+    sample = sorted(list(map(int, np.random.choice(data.shape[0], sample_size, replace=False))))
+    scores = {i: 0. for i in range(sample_size)}
+    for point in sample:
+        radius = starting_radius
+        num_results = len(manifold.find_points(data[point], radius))
+        while num_results > 10:
+            radius /= 2.
+            num_results = len(manifold.find_points(data[point], radius))
+        scores[point] = 0. - radius
+
+    [print(k, v) for k, v in sorted(scores.items())]
+    scores = normalize(scores)
+    return scores
 
 
 def k_nearest_neighbors_anomalies(graph: Graph) -> Dict[int, float]:
@@ -41,7 +51,8 @@ def k_nearest_neighbors_anomalies(graph: Graph) -> Dict[int, float]:
     manifold = graph.manifold
     data = manifold.data
 
-    sample = sorted(list(map(int, np.random.choice(data.shape[0], int(data.shape[0] * 1), replace=False))))
+    sample_size = min(10_000, int(data.shape[0] * 0.05))
+    sample = sorted(list(map(int, np.random.choice(data.shape[0], sample_size, replace=False))))
     knn = {s: list(manifold.find_knn(manifold.data[s], 10).items()) for s in sample}
     scores = {i: sum([distances[k][1] for k in range(0, 10)]) for i, distances in knn.items()}
     return normalize(scores)
@@ -378,4 +389,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(e)
+        exit(1)

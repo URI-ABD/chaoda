@@ -157,7 +157,7 @@ def main():
         # 'cosine',
     ]
 
-    for dataset in ['optdigits']:
+    for dataset in list(DATASETS.keys()):
         normalize = dataset not in ['mnist']
         data, labels = read_data(dataset, normalize)
         # data, labels = data[: 10_000, :], labels[: 10_000]
