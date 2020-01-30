@@ -26,6 +26,7 @@ DATASETS: Dict = {
     'wine': 'https://www.dropbox.com/s/uvjaudt2uto7zal/wine.mat?dl=0',
     'pendigits': 'https://www.dropbox.com/s/1x8rzb4a0lia6t1/pendigits.mat?dl=0',
     'optdigits': 'https://www.dropbox.com/s/w52ndgz5k75s514/optdigits.mat?dl=0',
+    'p53mutants': 'https://archive.ics.uci.edu/ml/machine-learning-databases/p53/p53_new_2012.zip'
 }
 
 
@@ -39,7 +40,39 @@ def min_max_normalization(data):
     return data
 
 
+def read_mutants(normalize: bool = False):
+    filename = '../data/p53mutants/K9.pickle'
+    if os.path.exists(filename):
+        with open(filename, 'rb') as infile:
+            data, labels = pickle.load(infile)
+    else:
+        shape = (31_420, 5_408)
+        data, labels = np.zeros(shape=shape, dtype=np.float64), np.zeros(shape=shape[0], dtype=np.int8)
+        with open('../data/p53mutants/K9.data', 'r') as infile:
+            for i, line in enumerate(infile):
+                line = line.split(',')
+                label = np.int8(line[-2] == 'active')
+                datum = np.asarray([float(s) if s != '?' else np.nan for s in line[:-2]], dtype=np.float64)
+                data[i, :], labels[i] = datum, label
+
+        # replace nans with column mean
+        col_mean = np.nanmean(data, axis=0)
+        indexes = np.where(np.isnan(data))
+        data[indexes] = np.take(col_mean, indexes[1])
+
+        with open(filename, 'wb') as outfile:
+            pickle.dump((data, labels), outfile)
+
+    if normalize is True:
+        data = min_max_normalization(data)
+
+    return data, labels
+
+
 def read_data(dataset: str, normalize: bool = False):
+    if dataset == 'p53mutants':
+        return read_mutants(normalize=normalize)
+
     filename = f'../data/{dataset}/{dataset}.mat'
     data_dict: Dict = {}
     try:
@@ -140,6 +173,8 @@ def make_dirs(datasets: List[str]):
         os.mkdir('../data')
 
     for dataset in datasets:
+        if dataset == 'p53mutants':
+            continue
         if not os.path.exists(f'../data/{dataset}'):
             os.mkdir(f'../data/{dataset}')
         for folder in ['umap', 'frames']:
@@ -163,8 +198,11 @@ def main():
     ]
 
     for dataset in list(DATASETS.keys()):
+        if dataset not in ['p53mutants']:
+            continue
         normalize = dataset not in ['mnist']
         data, labels = read_data(dataset, normalize)
+        print(f'data_shape: {data.shape}, num_outliers: {len([l for l in labels if l == 1])}')
         # data, labels = data[: 10_000, :], labels[: 10_000]
         for metric in metrics:
             for n_neighbors in [32]:

@@ -2,7 +2,6 @@ import os
 import random
 from collections import deque
 from typing import Dict, Set, List
-import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,9 +9,9 @@ from chess import criterion
 from chess.manifold import Manifold, Graph, Cluster
 # noinspection PyUnresolvedReferences
 from mpl_toolkits.mplot3d import Axes3D
-from visualizations import DATASETS, read_data, make_dirs
-from scipy.spatial.distance import cosine
 from sklearn.metrics import roc_curve, auc
+# noinspection PyUnresolvedReferences
+from visualizations import DATASETS, read_data, make_dirs
 
 
 def normalize(anomalies: Dict[int, float]) -> Dict[int, float]:
