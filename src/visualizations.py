@@ -55,6 +55,11 @@ def read_data(dataset: str, normalize: bool = False):
     data = np.asarray(data_dict['X'], dtype=np.float64)
     labels = np.asarray(data_dict['y'], dtype=np.int8)
 
+    if data.shape[0] > 100_000:
+        samples = sorted(list(np.random.choice(data.shape[0], 100_000, replace=False)))
+        data = np.asarray([data[s] for s in samples], dtype=np.float64)
+        labels = np.asarray([labels[s] for s in samples], dtype=np.int8)
+
     if normalize is True:
         data = min_max_normalization(data)
 

@@ -11,6 +11,7 @@ from chess.manifold import Manifold, Graph, Cluster
 # noinspection PyUnresolvedReferences
 from mpl_toolkits.mplot3d import Axes3D
 from visualizations import DATASETS, read_data, make_dirs
+from scipy.spatial.distance import cosine
 from sklearn.metrics import roc_curve, auc
 
 
@@ -66,19 +67,12 @@ def hierarchical_anomalies(graph: Graph) -> Dict[int, float]:
     results = {i: list() for i in range(data.shape[0])}
     for g in manifold.graphs[1: depth]:
         for cluster in g.clusters.keys():
-            [results[p].append(0) for p in cluster.argpoints]
-            if cluster.name[-1] == '1':
-                parent = manifold.select(cluster.name[:-1])
-                f = float(len(cluster.argpoints)) / len(parent.argpoints)
-                if f < 0.25:
-                    for p in cluster.argpoints:
-                        results[p][-1] = depth
-            elif cluster.name[-1] == '0' and results[cluster.argpoints[0]][-1] > 0:
-                for p in cluster.argpoints:
-                        results[p][-1] = depth
-
+            parent = manifold.select(cluster.name[:-1])
+            f = 1. / (float(len(cluster.argpoints)) / len(parent.argpoints))
+            [results[p].append(f) for p in cluster.argpoints]
+            
     results = {k: sum(v) for k, v in results.items()}
-    return normalize(results) if results else {}
+    return normalize(results)
 
 
 def outrank_anomalies(graph: Graph) -> Dict[int, float]:
@@ -92,7 +86,7 @@ def outrank_anomalies(graph: Graph) -> Dict[int, float]:
     for subgraph in subgraphs:
         results: Dict[Cluster, int] = subgraph.random_walk(
             steps=1000,  # max(len(subgraph.clusters.keys()) // 10, 10),
-            walks=max(len(subgraph.clusters.keys()), 10),
+            walks=max(len(subgraph.clusters.keys()) // 100, 10),
         )
         anomalies.update({p: v for c, v in results.items() for p in c.argpoints})
 
@@ -190,23 +184,23 @@ def plot_roc_curve(true_labels, anomalies, dataset, metric, method, depth, save)
     plt.clf()
     fig = plt.figure()
     lw = 2
-    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % auc(fpr, tpr))
+    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.6f)' % auc(fpr, tpr))
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    plt.xlim([0.0, 1.0])
+    plt.xlim([0.0, 1.05])
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic example')
+    plt.title(f'{dataset}-{metric}-{method}-{depth}')
     plt.legend(loc="lower right")
 
     if save is True:
-        filepath = f'../data/{dataset}/plots/{metric}/{method}/{depth}-roc_curve.png'
+        filepath = f'../data/{dataset}/plots-98/{metric}/{method}/{depth}-roc_curve.png'
         make_folders(dataset, metric, method)
         fig.savefig(filepath)
     else:
         plt.show()
     
-    csv_filepath = f'../data/{dataset}/plots/{metric}/{method}/roc_curves.csv'
+    csv_filepath = f'../data/{dataset}/plots-98/{metric}/{method}/roc_curves.csv'
     if not os.path.exists(csv_filepath):
         with open(csv_filepath, 'w') as outfile:
             outfile.write('depth,scores\n')
@@ -268,9 +262,9 @@ def plot_confusion_matrix(
 def make_folders(dataset, metric, method):
     dir_paths = [f'../data',
                  f'../data/{dataset}',
-                 f'../data/{dataset}/plots',
-                 f'../data/{dataset}/plots/{metric}',
-                 f'../data/{dataset}/plots/{metric}/{method}']
+                 f'../data/{dataset}/plots-98',
+                 f'../data/{dataset}/plots-98/{metric}',
+                 f'../data/{dataset}/plots-98/{metric}/{method}']
     for dir_path in dir_paths:
         if not os.path.exists(dir_path):
             os.mkdir(dir_path)
@@ -305,57 +299,62 @@ def main():
         # 'n_points_in_ball': n_points_in_ball,
         # 'k_nearest': k_nearest_neighbors_anomalies,
         'hierarchical': hierarchical_anomalies,
-        'outrank': outrank_anomalies,
+        'random_walk': outrank_anomalies,
         'k_neighborhood': k_neighborhood_anomalies,
         'cluster_cardinality': cluster_cardinality_anomalies,
         'subgraph_cardinality': subgraph_cardinality_anomalies,
     }
 
     for dataset in DATASETS.keys():
-        if dataset in ['mnist']:
+        # if dataset not in ['optdigits']:
+        #     continue
+        
+        np.random.seed(42)
+        random.seed(42)
+        data, labels = read_data(dataset)
+
+        if data.shape[0] > 50_000:
             continue
-        for metric in ['euclidean', 'manhattan', 'cosine']:
-            print(f'\ndataset: {dataset}, metric: {metric}')
-            np.random.seed(42)
-            random.seed(42)
-            data, labels = read_data(dataset)
+        
+        for metric in ['cosine', 'euclidean', 'manhattan', ]:  # 
+            print(f'\ndataset: {dataset}, metric: {metric}, data_shape: {data.shape}, outliers: {len([l for l in labels if l > 0.9]) / len(labels)}')
 
             if metric == 'manhattan':
                 manifold = Manifold(data, 'cityblock')
+            # elif metric == 'cosine':
+            #     pass
             else:
                 manifold = Manifold(data, metric)
             if not os.path.exists(f'../logs'):
                 os.mkdir(f'../logs')
 
-            max_depth, min_points = 100, 1
-            filepath = f'../logs/{dataset}-{metric}-{max_depth}-{min_points}.pickle'
+            max_depth, min_points = 100, (5 if data.shape[0] > 50_000 else 1)
+            graph_ratio = 98
+            filepath = f'../logs/{dataset}-{metric}-{max_depth}-{min_points}-{graph_ratio}.pickle'
             if os.path.exists(filepath):
                 with open(filepath, 'rb') as infile:
                     manifold = manifold.load(infile, data)
             else:
-                try:
-                    for d in range(max_depth - 1, 0, -1):
-                        oldfile = f'../logs/{dataset}-{metric}-{d}-{min_points}.pickle'
-                        if os.path.exists(oldfile):
-                            with open(oldfile, 'rb') as infile:
-                                manifold = manifold.load(infile, data)
-                            manifold.build_tree(
-                                criterion.MaxDepth(max_depth),
-                                criterion.MinPoints(min_points),
-                            )
-                            [graph.build_edges() for graph in manifold.graphs[d + 1:]]
-                            break
-                    else:
-                        manifold.build(
+                for d in range(max_depth - 1, 0, -1):
+                    oldfile = f'../logs/{dataset}-{metric}-{d}-{min_points}-{graph_ratio}.pickle'
+                    if os.path.exists(oldfile):
+                        with open(oldfile, 'rb') as infile:
+                            manifold = manifold.load(infile, data)
+                        manifold.build_tree(
                             criterion.MaxDepth(max_depth),
                             criterion.MinPoints(min_points),
                         )
-                    filepath = f'../logs/{dataset}-{metric}-{len(manifold.graphs) - 1}-{min_points}.pickle'
-                    with open(filepath, 'wb') as infile:
-                        # print(f'\n\n SAVING!!!!! \n{filepath} \n\n')
-                        manifold.dump(infile)
-                except Exception as e:
-                    logging.error(e)
+                        [graph.build_edges() for graph in manifold.graphs[d + 1:]]
+                        break
+                else:
+                    manifold.build(
+                        criterion.MaxDepth(max_depth),
+                        criterion.MinPoints(min_points),
+                    )
+                filepath = f'../logs/{dataset}-{metric}-{len(manifold.graphs) - 1}-{min_points}-{graph_ratio}.pickle'
+                with open(filepath, 'wb') as infile:
+                    # print(f'\n\n SAVING!!!!! \n{filepath} \n\n')
+                    manifold.dump(infile)
 
             for depth in range(0, manifold.depth + 1, 1):
                 print(f'depth: {depth},'
@@ -389,8 +388,4 @@ def main():
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        print(e)
-        exit(1)
+    main()
