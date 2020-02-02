@@ -52,7 +52,10 @@ def k_nearest_neighbors_anomalies(graph: Graph) -> Dict[int, float]:
     data = manifold.data
 
     sample_size = min(10_000, int(data.shape[0] * 0.05))
-    sample = sorted(list(map(int, np.random.choice(data.shape[0], sample_size, replace=False))))
+    if sample_size < data.shape[0]:
+        sample = sorted(list(map(int, np.random.choice(data.shape[0], sample_size, replace=False))))
+    else:
+        sample = list(range(data.shape[0]))
     knn = {s: list(manifold.find_knn(manifold.data[s], 10).items()) for s in sample}
     scores = {i: sum([distances[k][1] for k in range(0, 10)]) for i, distances in knn.items()}
     return normalize(scores)
@@ -312,7 +315,7 @@ def main():
         random.seed(42)
         data, labels = read_data(dataset)
 
-        if data.shape[0] > 50_000:
+        if data.shape[0] > 10_000:
             continue
         
         for metric in ['cosine', 'euclidean', 'manhattan', ]:  # 
@@ -327,8 +330,13 @@ def main():
             if not os.path.exists(f'../logs'):
                 os.mkdir(f'../logs')
 
-            max_depth, min_points = 100, (5 if data.shape[0] > 50_000 else 1)
-            graph_ratio = 98
+            max_depth, min_points = 50, 1
+            graph_ratio = 100
+            # manifold.build(
+            #     criterion.MaxDepth(max_depth),
+            #     criterion.MinPoints(min_points),
+            # )
+
             filepath = f'../logs/{dataset}-{metric}-{max_depth}-{min_points}-{graph_ratio}.pickle'
             if os.path.exists(filepath):
                 with open(filepath, 'rb') as infile:
@@ -364,7 +372,7 @@ def main():
                     if method in ['n_points_in_ball', 'k_nearest'] and depth < manifold.depth:
                         continue
                     anomalies = methods[method](manifold.graphs[depth])
-                    
+
                     # plot_histogram(
                     #     x=[v for _, v in anomalies.items()],
                     #     dataset=dataset,
