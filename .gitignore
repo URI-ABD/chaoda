@@ -284,3 +284,5 @@ data
 __pycache__
 logs
 .venv/
+plots/
+build/
