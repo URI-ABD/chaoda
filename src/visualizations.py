@@ -14,6 +14,27 @@ DATASETS: Dict = {
     'cover': 'https://www.dropbox.com/s/awx8iuzbu8dkxf1/cover.mat?dl=0',
     'letter': 'https://www.dropbox.com/s/rt9i95h9jywrtiy/letter.mat?dl=0',
     'http': 'https://www.dropbox.com/s/iy9ucsifal754tp/http.mat?dl=0',
+    'smtp': 'https://www.dropbox.com/s/dbv2u4830xri7og/smtp.mat?dl=0',
+    'shuttle': 'https://www.dropbox.com/s/mk8ozgisimfn3dw/shuttle.mat?dl=0',
+    'satellite': 'https://www.dropbox.com/s/dpzxp8jyr9h93k5/satellite.mat?dl=0',
+    'mammography': 'https://www.dropbox.com/s/tq2v4hhwyv17hlk/mammography.mat?dl=0',
+    'annthyroid': 'https://www.dropbox.com/s/aifk51owxbogwav/annthyroid.mat?dl=0',
+    'breastw': 'https://www.dropbox.com/s/g3hlnucj71kfvq4/breastw.mat?dl=0',
+    'vowels': 'https://www.dropbox.com/s/pa26odoq6atq9vx/vowels.mat?dl=0',
+    'musk': 'https://www.dropbox.com/s/we6aqhb0m38i60t/musk.mat?dl=0',
+    'satimage-2': 'https://www.dropbox.com/s/hckgvu9m6fs441p/satimage-2.mat?dl=0',
+    'wine': 'https://www.dropbox.com/s/uvjaudt2uto7zal/wine.mat?dl=0',
+    'pendigits': 'https://www.dropbox.com/s/1x8rzb4a0lia6t1/pendigits.mat?dl=0',
+    'optdigits': 'https://www.dropbox.com/s/w52ndgz5k75s514/optdigits.mat?dl=0',
+    'p53mutants': 'https://archive.ics.uci.edu/ml/machine-learning-databases/p53/p53_new_2012.zip',
+    'arrhythmia': 'https://www.dropbox.com/s/lmlwuspn1sey48r/arrhythmia.mat?dl=0',
+    'ionosphere': 'https://www.dropbox.com/s/lpn4z73fico4uup/ionosphere.mat?dl=0',
+    'lympho': 'https://www.dropbox.com/s/ag469ssk0lmctco/lympho.mat?dl=0',
+    'wbc': 'https://www.dropbox.com/s/ebz9v9kdnvykzcb/wbc.mat?dl=0',
+    'glass': 'https://www.dropbox.com/s/iq3hjxw77gpbl7u/glass.mat?dl=0',
+    'cardio': 'https://www.dropbox.com/s/galg3ihvxklf0qi/cardio.mat?dl=0',
+    'thyroid': 'https://www.dropbox.com/s/bih0e15a0fukftb/thyroid.mat?dl=0',
+    'speech': 'https://www.dropbox.com/s/w6xv51ctea6uauc/speech.mat?dl=0',
 }
 
 
@@ -27,7 +48,39 @@ def min_max_normalization(data):
     return data
 
 
+def read_mutants(normalize: bool = False):
+    filename = '../data/p53mutants/K9.pickle'
+    if os.path.exists(filename):
+        with open(filename, 'rb') as infile:
+            data, labels = pickle.load(infile)
+    else:
+        shape = (31_420, 5_408)
+        data, labels = np.zeros(shape=shape, dtype=np.float64), np.zeros(shape=shape[0], dtype=np.int8)
+        with open('../data/p53mutants/K9.data', 'r') as infile:
+            for i, line in enumerate(infile):
+                line = line.split(',')
+                label = np.int8(line[-2] == 'active')
+                datum = np.asarray([float(s) if s != '?' else np.nan for s in line[:-2]], dtype=np.float64)
+                data[i, :], labels[i] = datum, label
+
+        # replace nans with column mean
+        col_mean = np.nanmean(data, axis=0)
+        indexes = np.where(np.isnan(data))
+        data[indexes] = np.take(col_mean, indexes[1])
+
+        with open(filename, 'wb') as outfile:
+            pickle.dump((data, labels), outfile)
+
+    if normalize is True:
+        data = min_max_normalization(data)
+
+    return data, labels
+
+
 def read_data(dataset: str, normalize: bool = False):
+    if dataset == 'p53mutants':
+        return read_mutants(normalize=normalize)
+
     filename = f'../data/{dataset}/{dataset}.mat'
     data_dict: Dict = {}
     try:
@@ -42,6 +95,11 @@ def read_data(dataset: str, normalize: bool = False):
 
     data = np.asarray(data_dict['X'], dtype=np.float64)
     labels = np.asarray(data_dict['y'], dtype=np.int8)
+
+    if data.shape[0] > 100_000:
+        samples = sorted(list(np.random.choice(data.shape[0], 100_000, replace=False)))
+        data = np.asarray([data[s] for s in samples], dtype=np.float64)
+        labels = np.asarray([labels[s] for s in samples], dtype=np.int8)
 
     if normalize is True:
         data = min_max_normalization(data)
@@ -123,6 +181,8 @@ def make_dirs(datasets: List[str]):
         os.mkdir('../data')
 
     for dataset in datasets:
+        if dataset == 'p53mutants':
+            continue
         if not os.path.exists(f'../data/{dataset}'):
             os.mkdir(f'../data/{dataset}')
         for folder in ['umap', 'frames']:
@@ -145,22 +205,26 @@ def main():
         # 'cosine',
     ]
 
-    for dataset in ['http']:
+    for dataset in list(DATASETS.keys()):
+        if dataset not in ['p53mutants']:
+            continue
         normalize = dataset not in ['mnist']
         data, labels = read_data(dataset, normalize)
+        print(f'data_shape: {data.shape}, num_outliers: {len([l for l in labels if l == 1])}')
         # data, labels = data[: 10_000, :], labels[: 10_000]
         for metric in metrics:
             for n_neighbors in [32]:
                 for n_components in [3]:
                     filename = f'../data/{dataset}/umap/{n_neighbors}-{n_components}d-{metric}.pickle'
                     if data.shape[1] > n_components:
-                        embedding = make_umap(data, n_neighbors, n_components, metric, filename)
+                        embedding = data
+                        # embedding = make_umap(data, n_neighbors, n_components, metric, filename)
                     else:
                         embedding = data
                     title = f'{dataset}-{metric}-{n_neighbors}'
                     if n_components == 3:
-                        folder = f'../data/{dataset}/frames/{metric}-'
-                        plot_3d(embedding, labels, title, folder)
+                        # folder = f'../data/{dataset}/frames/{metric}-'
+                        # plot_3d(embedding, labels, title, folder)
 
                         # run([
                         #     'ffmpeg',
@@ -175,7 +239,7 @@ def main():
 
                         pass
                     if n_components == 2:
-                        plot_2d(embedding, labels, title)
+                        # plot_2d(embedding, labels, title)
                         pass
 
     return
