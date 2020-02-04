@@ -1,4 +1,5 @@
 CHESS-python==2.0.0
+Click==7.0
 cycler==0.10.0
 h5py==2.10.0
 joblib==0.14.1
