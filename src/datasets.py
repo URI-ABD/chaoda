@@ -7,7 +7,8 @@ from zipfile import ZipFile
 import numpy as np
 import scipy.io
 
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+# DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+DATA_DIR = os.path.join('/', 'data', 'nishaq', 'anomaly', 'data')
 
 DATASETS: Dict = {
     'mnist': 'https://www.dropbox.com/s/n3wurjt8v9qi6nc/mnist.mat?dl=0',

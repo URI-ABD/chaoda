@@ -23,7 +23,8 @@ METRICS = {
     'manhattan': 'cityblock',
 }
 
-BUILD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
+# BUILD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
+BUILD_DIR = os.path.join('/', 'data', 'nishaq', 'anomaly', 'build')
 
 
 def _manifold_path(dataset, metric, min_points, graph_ratio) -> str:
