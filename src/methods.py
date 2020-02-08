@@ -1,9 +1,8 @@
-from typing import Dict
 from collections import deque
+from typing import Dict, Set
 
 import numpy as np
-
-from chess.manifold import Manifold, Graph, Cluster
+from pyclam.manifold import Graph, Cluster
 
 
 def normalize(anomalies: Dict[int, float]) -> Dict[int, float]:
@@ -43,7 +42,8 @@ def k_nearest_neighbors_anomalies(graph: Graph) -> Dict[int, float]:
     manifold = graph.manifold
     data = manifold.data
 
-    sample_size = min(10_000, int(data.shape[0] * 0.05))
+    sample_size = min(2_000, int(data.shape[0] * 0.05))
+    # sample_size = int(data.shape[0])
     sample = sorted(list(map(int, np.random.choice(data.shape[0], sample_size, replace=False))))
     knn = {s: list(manifold.find_knn(manifold.data[s], 10).items()) for s in sample}
     scores = {i: sum([distances[k][1] for k in range(0, 10)]) for i, distances in knn.items()}
@@ -143,11 +143,11 @@ def subgraph_cardinality_anomalies(graph: Graph) -> Dict[int, float]:
 
 
 METHODS = {
-    # 'n_points_in_ball': n_points_in_ball,
-    # 'k_nearest': k_nearest_neighbors_anomalies,
-    'hierarchical': hierarchical_anomalies,
-    'random_walk': outrank_anomalies,
-    'k_neighborhood': k_neighborhood_anomalies,
     'cluster_cardinality': cluster_cardinality_anomalies,
+    'hierarchical': hierarchical_anomalies,
+    # 'k_nearest': k_nearest_neighbors_anomalies,
+    'k_neighborhood': k_neighborhood_anomalies,
+    # 'n_points_in_ball': n_points_in_ball,
+    'random_walk': outrank_anomalies,
     'subgraph_cardinality': subgraph_cardinality_anomalies,
 }

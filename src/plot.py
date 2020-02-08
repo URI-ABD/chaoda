@@ -11,8 +11,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 
-# PLOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plots'))
-PLOT_DIR = os.path.join('/', 'data', 'nishaq', 'anomaly', 'plots')
+PLOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plots'))
 
 
 def _directory(dataset, metric, method):
@@ -218,7 +217,7 @@ def plot_3d(
 
 RESULT_PLOTS = {
     'roc_curve': roc_curve,
-    'confusion_matrix': confusion_matrix,
+    # 'confusion_matrix': confusion_matrix,
 }
 
 DATA_PLOTS = {
