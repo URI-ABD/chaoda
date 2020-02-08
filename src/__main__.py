@@ -16,6 +16,9 @@ from .plot import RESULT_PLOTS
 np.random.seed(42)
 random.seed(42)
 
+SUB_SAMPLE = 10_000
+NORMALIZE = False
+
 METRICS = {
     'cosine': 'cosine',
     'euclidean': 'euclidean',
@@ -61,7 +64,7 @@ def cli():
 @click.option('--dataset', type=click.Choice(DATASETS.keys()))
 @click.option('--metric', type=click.Choice(METRICS.keys()))
 @click.option('--max-depth', type=int, default=100)
-@click.option('--min-points', type=int, default=1)
+@click.option('--min-points', type=int, default=3)
 @click.option('--graph-ratio', type=int, default=100)
 def build(dataset, metric, max_depth, min_points, graph_ratio):
     datasets = [dataset] if dataset else DATASETS.keys()
@@ -69,7 +72,7 @@ def build(dataset, metric, max_depth, min_points, graph_ratio):
 
     for dataset in datasets:
         get(dataset)
-        data, labels = read(dataset, normalize=True, subsample=100_000)
+        data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
 
         for metric in metrics:
             logging.info('; '.join([
@@ -80,7 +83,7 @@ def build(dataset, metric, max_depth, min_points, graph_ratio):
             ]))
             manifold = Manifold(data, METRICS[metric])
 
-            min_points = max(10, min_points) if data.shape[0] > 10_000 else 1
+            min_points = max(3, min_points) if data.shape[0] > 10_000 else 3
             filepath = _manifold_path(dataset, metric, min_points, graph_ratio)
             if os.path.exists(filepath):
                 with open(filepath, 'rb') as fp:
@@ -113,7 +116,7 @@ def build(dataset, metric, max_depth, min_points, graph_ratio):
 def test(method, dataset, metric, min_points, graph_ratio):
     methods = [method] if method else METHODS.keys()
     for path in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
-        data, labels = read(str(_dataset_from_path(path)), normalize=False, subsample=100_000)
+        data, labels = read(str(_dataset_from_path(path)), normalize=NORMALIZE, subsample=SUB_SAMPLE)
 
         # Load the manifold.
         with open(path, 'rb') as fp:
@@ -152,7 +155,7 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
     for manifold in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
         meta = _meta_from_path(manifold)
         dataset, metric = str(meta['dataset']), meta['metric']
-        data, labels = read(dataset, normalize=False, subsample=100_000)
+        data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
         with open(manifold, 'rb') as fp:
             logging.info(f'loading manifold {manifold}')
             manifold = Manifold.load(fp, data)
