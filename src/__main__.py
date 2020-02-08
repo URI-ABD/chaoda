@@ -1,18 +1,17 @@
 import logging
-import random
 import os
+import random
 from glob import glob
 
 import click
 import numpy as np
+from pyclam import criterion
+from pyclam.manifold import Manifold
 from sklearn.metrics import roc_auc_score
 
-from chess.manifold import Manifold
-from chess import criterion
-
-from .datasets import DATASETS, DATA_DIR, get, read
-from .methods import METHODS, normalize
-from .plot import RESULT_PLOTS, plot_2d, plot_3d
+from .datasets import DATASETS, get, read
+from .methods import METHODS
+from .plot import RESULT_PLOTS
 
 np.random.seed(42)
 random.seed(42)
@@ -23,8 +22,7 @@ METRICS = {
     'manhattan': 'cityblock',
 }
 
-# BUILD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
-BUILD_DIR = os.path.join('/', 'data', 'nishaq', 'anomaly', 'build')
+BUILD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
 
 
 def _manifold_path(dataset, metric, min_points, graph_ratio) -> str:
@@ -45,6 +43,7 @@ def _metric_from_path(path):
 
 def _meta_from_path(path):
     bundle = os.path.basename(path).split(':')
+    # noinspection PyTypeChecker
     return {
         'dataset': bundle[0],
         'metric': bundle[1],
@@ -60,35 +59,49 @@ def cli():
 
 @cli.command()
 @click.option('--dataset', type=click.Choice(DATASETS.keys()))
-@click.option('--metric', type=click.Choice(DATASETS.keys()))
+@click.option('--metric', type=click.Choice(METRICS.keys()))
 @click.option('--max-depth', type=int, default=100)
-@click.option('--graph-ratio', type=int, default=98)
-def build(dataset, metric, max_depth, graph_ratio):
+@click.option('--min-points', type=int, default=1)
+@click.option('--graph-ratio', type=int, default=100)
+def build(dataset, metric, max_depth, min_points, graph_ratio):
     datasets = [dataset] if dataset else DATASETS.keys()
     metrics = [metric] if metric else METRICS.keys()
-    
+
     for dataset in datasets:
         get(dataset)
-        data, labels = read(dataset)
+        data, labels = read(dataset, normalize=True, subsample=100_000)
 
         for metric in metrics:
             logging.info('; '.join([
                 f'dataset: {dataset}',
                 f'metric: {metric}',
                 f'shape: {data.shape}',
-                f'outliers: {len(np.where(labels > 0.9)[0]) / len(labels)}'
+                f'outliers: {labels.sum()}'
             ]))
             manifold = Manifold(data, METRICS[metric])
 
-            min_points = 5 if data.shape[0] > 50_000 else 1            
-            manifold.build(
-                criterion.MaxDepth(max_depth),
-                criterion.MinPoints(min_points),
-            )
+            min_points = max(10, min_points) if data.shape[0] > 10_000 else 1
             filepath = _manifold_path(dataset, metric, min_points, graph_ratio)
-            with open(filepath, 'wb') as fp:
-                logging.info(f'dumping manifold {filepath}')
-                manifold.dump(fp)
+            if os.path.exists(filepath):
+                with open(filepath, 'rb') as fp:
+                    logging.info(f'loading manifold {filepath}')
+                    manifold = manifold.load(fp, data)
+                manifold.build_tree(
+                    criterion.MaxDepth(max_depth),
+                    criterion.MinPoints(min_points),
+                )
+                manifold.build_graphs()
+                with open(filepath, 'wb') as fp:
+                    logging.info(f'dumping manifold {filepath}')
+                    manifold.dump(fp)
+            else:
+                manifold.build(
+                    criterion.MaxDepth(max_depth),
+                    criterion.MinPoints(min_points),
+                )
+                with open(filepath, 'wb') as fp:
+                    logging.info(f'dumping manifold {filepath}')
+                    manifold.dump(fp)
 
 
 @cli.command()
@@ -100,8 +113,8 @@ def build(dataset, metric, max_depth, graph_ratio):
 def test(method, dataset, metric, min_points, graph_ratio):
     methods = [method] if method else METHODS.keys()
     for path in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
-        data, labels = read(_dataset_from_path(path))
-        
+        data, labels = read(str(_dataset_from_path(path)), normalize=False, subsample=100_000)
+
         # Load the manifold.
         with open(path, 'rb') as fp:
             manifold = Manifold.load(fp, data)
@@ -130,26 +143,27 @@ def test(method, dataset, metric, min_points, graph_ratio):
 @click.option('--method', type=click.Choice(METHODS.keys()))
 @click.option('--dataset', type=str, default='*')
 @click.option('--metric', type=str, default='*')
+@click.option('--starting-depth', type=int, default=0)
 @click.option('--min-points', type=str, default='*')
 @click.option('--graph-ratio', type=str, default='*')
-def plot_results(plot, method, dataset, metric, min_points, graph_ratio):
+def plot_results(plot, method, dataset, metric, starting_depth, min_points, graph_ratio):
     methods = [method] if method else METHODS.keys()
     plots = [plot] if plot else RESULT_PLOTS.keys()
     for manifold in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
         meta = _meta_from_path(manifold)
-        dataset = meta['dataset']
-        metric = meta['metric']
-        data, labels = read(dataset)
+        dataset, metric = str(meta['dataset']), meta['metric']
+        data, labels = read(dataset, normalize=False, subsample=100_000)
         with open(manifold, 'rb') as fp:
+            logging.info(f'loading manifold {manifold}')
             manifold = Manifold.load(fp, data)
         for method in methods:
-            for depth in range(0, manifold.depth + 1):
+            for depth in range(starting_depth, manifold.depth + 1):
                 if method in {'n_points_in_ball', 'k_nearest'} and depth < manifold.depth:
                     continue
                 for plot in plots:
-                    logging.info(f'{dataset}, {depth}, {plot}')
+                    logging.info(f'{dataset}, {metric}, {depth}/{manifold.depth}, {method}, {plot}')
                     RESULT_PLOTS[plot](
-                        labels, 
+                        labels,
                         METHODS[method](manifold.graphs[depth]),
                         dataset,
                         metric,
@@ -163,10 +177,10 @@ def plot_results(plot, method, dataset, metric, min_points, graph_ratio):
 def plot_data():
     # TODO
     raise NotImplementedError
-    for dataset in datasets: 
+    for dataset in datasets:
         normalize = dataset not in ['mnist']
         data, labels = read(dataset, normalize)
-        min_points = 5 if data.shape[0] > 50_000 else 1            
+        min_points = 5 if data.shape[0] > 50_000 else 1
         for metric in metrics:
             # TODO
             for n_neighbors in [32]:
@@ -182,7 +196,6 @@ def plot_data():
                     if n_components == 3:
                         # folder = f'../data/{dataset}/frames/{metric}-'
                         # plot_3d(embedding, labels, title, folder)
-
 
                         pass
                     if n_components == 2:

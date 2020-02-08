@@ -283,6 +283,7 @@ data
 */__pycache__
 __pycache__
 logs
-.venv/
-plots/
-build/
+.venv
+plots
+build
+normalized
