@@ -45,7 +45,7 @@ def k_nearest_neighbors_anomalies(graph: Graph) -> Dict[int, float]:
     sample_size = min(2_000, int(data.shape[0] * 0.05))
     # sample_size = int(data.shape[0])
     sample = sorted(list(map(int, np.random.choice(data.shape[0], sample_size, replace=False))))
-    knn = {s: list(manifold.find_knn(manifold.data[s], 10).items()) for s in sample}
+    knn = {s: list(manifold.find_knn(manifold.data[s], 10)) for s in sample}
     scores = {i: sum([distances[k][1] for k in range(0, 10)]) for i, distances in knn.items()}
     return normalize(scores)
 
@@ -75,9 +75,9 @@ def outrank_anomalies(graph: Graph) -> Dict[int, float]:
     subgraphs: Set[Graph] = graph.subgraphs
     anomalies: Dict[int, float] = dict()
     for subgraph in subgraphs:
-        results: Dict[Cluster, int] = subgraph.random_walk(
-            steps=1000,  # max(len(subgraph.clusters.keys()) // 10, 10),
-            walks=max(len(subgraph.clusters.keys()) // 100, 10),
+        results: Dict[Cluster, int] = subgraph.random_walks(
+            clusters=list(np.random.choice(list(subgraph.clusters.keys()), int(np.sqrt(subgraph.cardinality)))),
+            steps=max(int(np.sqrt(subgraph.cardinality)), 100),
         )
         anomalies.update({p: v for c, v in results.items() for p in c.argpoints})
 
