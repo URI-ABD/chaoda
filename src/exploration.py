@@ -63,7 +63,7 @@ def get_data(data_dict: Dict, subsample: bool) -> Tuple[np.memmap, List[int]]:
 
 def build_manifold(dataset: str, metric: str, subsample: bool = True) -> Manifold:
     data, argpoints = get_data(DATASETS[dataset], subsample)
-    manifold: Manifold = Manifold(data, metric)
+    manifold: Manifold = Manifold(data, metric, argpoints)
 
     filename = BASE_PATH + 'build/' + dataset + '.pickle'
     if os.path.exists(filename):
