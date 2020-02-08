@@ -7,7 +7,7 @@ from pyclam import Manifold, criterion
 np.random.seed(42)
 
 
-BASE_PATH = '/scratch/nishaq/'
+BASE_PATH = '/data/nishaq/'
 
 APOGEE2_PATH = BASE_PATH + 'APOGEE2/'
 APOGEE2 = {
@@ -71,8 +71,8 @@ def build_manifold(dataset: str, metric: str, subsample: bool = True) -> Manifol
             manifold = manifold.load(fp, data)
     else:
         manifold.build(
-            criterion.MaxDepth(50),
-            criterion.MinPoints(10),
+            criterion.MaxDepth(100),
+            criterion.MinPoints(3),
         )
         os.makedirs(filename)
         with open(filename, 'wb') as fp:
@@ -82,3 +82,4 @@ def build_manifold(dataset: str, metric: str, subsample: bool = True) -> Manifol
 
 if __name__ == '__main__':
     build_manifold('apogee2', 'euclidean')
+    build_manifold('greegenes', 'hamming')
