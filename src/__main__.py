@@ -252,7 +252,6 @@ def plot_data():
         data, labels = read(dataset, normalize)
         min_points = 5 if data.shape[0] > 50_000 else 1
         for metric in metrics:
-            # TODO
             for n_neighbors in [32]:
                 for n_components in [3]:
                     filename = os.path.join(BUILD_DIR, dataset)
