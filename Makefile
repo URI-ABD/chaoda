@@ -1,7 +1,7 @@
 
 clean:
 	rm -rf data
-	rm -rf logs
+	rm -rf build
 	rm -rf plots
 
 manifolds:
