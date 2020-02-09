@@ -93,6 +93,7 @@ def read(dataset: str, normalize: bool = True, subsample: int = None):
     labels = np.asarray(data_dict['y'], dtype=np.int8)
 
     if subsample and subsample < data.shape[0]:
+        # TODO(Najib): np.where -> np.argwhere
         negatives: List[int] = list(map(int, np.where(labels < 0.9)[0]))
 
         samples: List[int] = list(map(int, np.where(labels > 0.9)[0]))
