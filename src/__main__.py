@@ -204,7 +204,47 @@ def plot_results(state, plot, method, starting_depth, min_points, graph_ratio):
 
 @cli.command()
 @click.pass_obj
-def plot_data(state):
+def svm(state):
+    from sklearn.svm import OneClassSVM
+    from sklearn.model_selection import train_test_split
+    from joblib import dump, load
+    import numpy as np
+
+    datasets = [state.dataset] if state.dataset else DATASETS.keys()
+    metrics = [state.metric] if state.metric else METRICS.keys()
+    
+    # Build.
+    for dataset in datasets:
+        get(dataset)
+        data, labels = read(dataset, normalize=False)
+        normal, anomalies = np.argwhere(labels == 0).flatten(), np.argwhere(labels == 1).flatten()
+        indices = np.concatenate([
+            np.random.choice(normal, size=len(anomalies) * 9), 
+            anomalies
+            ])
+        train, test = train_test_split(indices, stratify=labels[indices])
+        for metric in metrics:
+            filepath = os.path.join(BUILD_DIR, 'svm', ':'.join([dataset, metric]))
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            if os.path.exists(filepath):
+                logging.info(f'loading {filepath}')
+                model = load(filepath)
+            else:
+                logging.info(f'building {filepath}')
+                model = OneClassSVM()
+                model.fit(data[train], y=labels[train])
+                dump(model, filepath)
+
+            # Test. 
+            logging.info(f'scoring {filepath}')
+            predicted = model.predict(data[test])
+            score = roc_auc_score(labels[test], predicted)
+            logging.info(':'.join(map(str, [dataset, metric, round(score, 2)])))
+            RESULT_PLOTS['roc_curve'](labels[test], {i: s for i, s in enumerate(np.clip(predicted, a_min=0, a_max=1))}, dataset, metric, 'SVM', 0, True)
+            
+
+@cli.command()
+def plot_data():
     # TODO
     raise NotImplementedError
     for dataset in datasets:
