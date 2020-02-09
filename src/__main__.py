@@ -54,23 +54,34 @@ def _meta_from_path(path):
         'graph_ratio': bundle[3].split('.pickle')[0],
     }
 
+class State:
+    """ This gets passed between chained commands. """
+    def __init__(self, dataset=None, metric=None, manifold=None):
+        self.dataset = dataset
+        self.metric = metric
+        self.manifold = manifold
+
+    def __getattr__(self, name):
+        return None
+
 
 @click.group(chain=True)
-def cli():
-    pass
+@click.option('--dataset', type=click.Choice(DATASETS.keys()))
+@click.option('--metric', type=click.Choice(METRICS.keys()))
+@click.pass_context
+def cli(ctx, dataset, metric):
+    ctx.obj = State(dataset, metric)
 
 
 @cli.command()
-@click.option('--dataset', type=click.Choice(DATASETS.keys()))
-@click.option('--metric', type=click.Choice(METRICS.keys()))
 @click.option('--max-depth', type=int, default=100)
 @click.option('--min-points', type=int, default=3)
 @click.option('--graph-ratio', type=int, default=100)
-def build(dataset, metric, max_depth, min_points, graph_ratio):
-    datasets = [dataset] if dataset else DATASETS.keys()
-    metrics = [metric] if metric else METRICS.keys()
-
-    for dataset in datasets:
+@click.pass_obj
+def build(state, max_depth, min_points, graph_ratio):
+    # Pickup any values from state that were pre-populated
+    metrics = [state.metric] if state.metric else METRICS.keys()
+    for dataset in [state.dataset] if state.dataset else DATASETS.keys():
         get(dataset)
         data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
 
@@ -97,6 +108,7 @@ def build(dataset, metric, max_depth, min_points, graph_ratio):
                 with open(filepath, 'wb') as fp:
                     logging.info(f'dumping manifold {filepath}')
                     manifold.dump(fp)
+                    state.manifold = manifold
             else:
                 manifold.build(
                     criterion.MaxDepth(max_depth),
@@ -105,22 +117,27 @@ def build(dataset, metric, max_depth, min_points, graph_ratio):
                 with open(filepath, 'wb') as fp:
                     logging.info(f'dumping manifold {filepath}')
                     manifold.dump(fp)
+                    state.manifold = manifold
 
 
 @cli.command()
 @click.option('--method', type=click.Choice(METHODS.keys()))
-@click.option('--dataset', type=str, default='*')
-@click.option('--metric', type=str, default='*')
 @click.option('--min-points', type=str, default='*')
 @click.option('--graph-ratio', type=str, default='*')
-def test(method, dataset, metric, min_points, graph_ratio):
+@click.pass_obj
+def test(state, method, min_points, graph_ratio):
+    manifolds = [state.manifold] if state.manifold else glob(_manifold_path(state.datset or '*', state.metric or '*', min_points, graph_ratio))
     methods = [method] if method else METHODS.keys()
-    for path in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
-        data, labels = read(str(_dataset_from_path(path)), normalize=NORMALIZE, subsample=SUB_SAMPLE)
+    for manifold in manifolds:
+        if state.dataset:
+            data, labels = read(state.dataset)
+        else:
+            data, labels = read(str(_dataset_from_path(manifold)), normalize=NORMALIZE, subsample=SUB_SAMPLE)
 
         # Load the manifold.
-        with open(path, 'rb') as fp:
-            manifold = Manifold.load(fp, data)
+        if type(manifold) is str:
+            with open(manifold, 'rb') as fp:
+                manifold = Manifold.load(fp, data)
 
         for method in methods:
             for depth in range(0, manifold.depth + 1, 1):
@@ -144,21 +161,30 @@ def test(method, dataset, metric, min_points, graph_ratio):
 @cli.command()
 @click.option('--plot', type=click.Choice(RESULT_PLOTS.keys()))
 @click.option('--method', type=click.Choice(METHODS.keys()))
-@click.option('--dataset', type=str, default='*')
-@click.option('--metric', type=str, default='*')
 @click.option('--starting-depth', type=int, default=0)
 @click.option('--min-points', type=str, default='*')
 @click.option('--graph-ratio', type=str, default='*')
-def plot_results(plot, method, dataset, metric, starting_depth, min_points, graph_ratio):
+@click.pass_obj
+def plot_results(state, plot, method, starting_depth, min_points, graph_ratio):
+    manifolds = [state.manifold] if state.manifold else glob(_manifold_path(state.datset or '*', state.metric or '*', min_points, graph_ratio))
     methods = [method] if method else METHODS.keys()
     plots = [plot] if plot else RESULT_PLOTS.keys()
-    for manifold in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
-        meta = _meta_from_path(manifold)
-        dataset, metric = str(meta['dataset']), meta['metric']
+
+    for manifold in manifolds:
+        if not state.dataset:
+            meta = _meta_from_path(manifold)
+            dataset, metric = str(meta['dataset']), meta['metric']
+        else:
+            dataset, metric = state.dataset, state.metric
         data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
-        with open(manifold, 'rb') as fp:
-            logging.info(f'loading manifold {manifold}')
-            manifold = Manifold.load(fp, data)
+        
+        if type(manifold) is str:
+            with open(manifold, 'rb') as fp:
+                logging.info(f'loading manifold {manifold}')
+                manifold = Manifold.load(fp, data)
+        else:
+            metric = manifold.metric
+        
         for method in methods:
             for depth in range(starting_depth, manifold.depth + 1):
                 if method in {'n_points_in_ball', 'k_nearest'} and depth < manifold.depth:
@@ -175,6 +201,47 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
                         save=True
                     )
 
+
+@cli.command()
+@click.pass_obj
+def svm(state):
+    from sklearn.svm import OneClassSVM
+    from sklearn.model_selection import train_test_split
+    from joblib import dump, load
+    import numpy as np
+
+    datasets = [state.dataset] if state.dataset else DATASETS.keys()
+    metrics = [state.metric] if state.metric else METRICS.keys()
+    
+    # Build.
+    for dataset in datasets:
+        get(dataset)
+        data, labels = read(dataset, normalize=False)
+        normal, anomalies = np.argwhere(labels == 0).flatten(), np.argwhere(labels == 1).flatten()
+        indices = np.concatenate([
+            np.random.choice(normal, size=len(anomalies) * 9), 
+            anomalies
+            ])
+        train, test = train_test_split(indices, stratify=labels[indices])
+        for metric in metrics:
+            filepath = os.path.join(BUILD_DIR, 'svm', ':'.join([dataset, metric]))
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            if os.path.exists(filepath):
+                logging.info(f'loading {filepath}')
+                model = load(filepath)
+            else:
+                logging.info(f'building {filepath}')
+                model = OneClassSVM()
+                model.fit(data[train], y=labels[train])
+                dump(model, filepath)
+
+            # Test. 
+            logging.info(f'scoring {filepath}')
+            predicted = model.predict(data[test])
+            score = roc_auc_score(labels[test], predicted)
+            logging.info(':'.join(map(str, [dataset, metric, round(score, 2)])))
+            RESULT_PLOTS['roc_curve'](labels[test], {i: s for i, s in enumerate(np.clip(predicted, a_min=0, a_max=1))}, dataset, metric, 'SVM', 0, True)
+            
 
 @cli.command()
 def plot_data():
