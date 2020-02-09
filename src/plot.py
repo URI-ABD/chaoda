@@ -46,6 +46,7 @@ def histogram(
 def roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
     y_true, y_score = [], []
     [(y_true.append(true_labels[k]), y_score.append(v)) for k, v in anomalies.items()]
+    print(sum(y_true))
     fpr, tpr, _ = metrics.roc_curve(y_true, y_score)
 
     plt.clf()
