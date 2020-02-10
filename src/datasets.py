@@ -93,9 +93,9 @@ def read(dataset: str, normalize: bool = True, subsample: int = None):
     labels = np.asarray(data_dict['y'], dtype=np.int8)
 
     if subsample and subsample < data.shape[0]:
-        negatives: List[int] = list(map(int, np.where(labels < 0.9)[0]))
+        negatives: List[int] = list(map(int, np.argwhere(labels < 0.9).flatten()))
 
-        samples: List[int] = list(map(int, np.where(labels > 0.9)[0]))
+        samples: List[int] = list(map(int, np.argwhere(labels > 0.9).flatten()))
         samples.extend(np.random.choice(negatives, subsample - len(samples), replace=False))
         data = np.asarray([data[s] for s in samples], dtype=np.float64)
         labels = np.asarray([labels[s] for s in samples], dtype=np.int8)
