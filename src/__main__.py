@@ -16,7 +16,7 @@ from .plot import RESULT_PLOTS
 np.random.seed(42)
 random.seed(42)
 
-SUB_SAMPLE = 10_000
+SUB_SAMPLE = 100_000
 NORMALIZE = False
 
 METRICS = {
