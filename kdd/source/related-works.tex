@@ -1,25 +1,23 @@
 \section{Related Works}
 \label{sec:related_works}
 
-In this section, we consider distance-based, clustering-based, and graph-based approaches.
+In this section, we consider previous works in distance-based, clustering-based, and graph-based approaches in outlier/anomaly detection.
 
 \subsection{Clustering-Based Approaches}
 
-Clustering data is universally centered around techniques for grouping points in a way that provides value.
-This is done by assigning similar points to the same cluster.
-Once these clusters are assigned, they can be used to check if there are any outliers present within the data.
-The clusters can also be used to check if new points are anomalous.
-For example, for any given point, one can check if it lies within, or near, any cluster; if not, the point can be marked as an anomaly.
-To determine if the data contain any outliers, one can also examine the cardinality of various clusters and/or how dissimilar the clusters are to each other.
-For example, if many clusters of large cardinality are present, along with relatively few clusters of very low cardinality, the clusters of low cardinality may contain outliers.
+Clustering data is universally centered around techniques for grouping instances in a way that provides value.
+This is generally done by assigning \textit{similar} points to the same cluster.
+Once clusters are formed, they can be used to inspect the data in great detail.
+For example, for any given point, one could estimate it's anomalousness by it's distance to it's nearest cluster.
+To determine if a cluster contains outliers, one could examine the relative cardinality of the cluster.
 
 We summarize several major approaches to clustering data.
-Note that there have been relatively few advancements in clustering techniques over the past decade~\cite{wang_progress_2019}. This may explain, or by attributable to, the observably poor performance, so far, of clustering data in high dimensional space~\cite{zhang_advancements_2013}.
+Note that there have been relatively few advancements in clustering techniques over the past decade~\cite{wang_progress_2019}. This may explain, or by attributable to, the observably poor performance, thus far, of clustering data in higher dimensional space~\cite{zhang_advancements_2013}.
 
 \subsubsection{Distance-Based Clustering}
 
 Distance-based clustering approaches rely on some distance measure to partition the data into some number of clusters.
-Within this approach, the numbers of clusters and/or the sizes of clusters are predefined: either user-specified, or chosen at random~\cite{wang_progress_2019}.
+Within this approach, the numbers of clusters and/or the sizes of clusters are normally predefined: either user-specified, or chosen at random~\cite{wang_progress_2019}.
 Some examples of distance-based clustering are: 
 K-Means~\cite{macqueen_methods_nodate}, 
 PAM~\cite{kaufman_finding_nodate}, 
@@ -31,7 +29,7 @@ etc.
 
 Hierarchical clustering methods typically utilize a tree-like structure, where points are allocated into leaf nodes~\cite{wang_progress_2019}.
 These tree-like structures can be created bottom-up (agglomerative clustering), or top-down (divisive clustering)~\cite{rakesh_agrawal_automatic_1998}.
-The major drawback of these methods is the high cost of pairwise distance computations at each level of the tree.
+The major drawback of these methods is the high cost of pairwise difference computations at each level of the tree.
 Examples of hierarchical clustering include: 
 MST~\cite{charles_zahn_graph_1971}, 
 CURE~\cite{noauthor_cure:_nodate}, 
@@ -41,7 +39,7 @@ etc.
 \subsubsection{Density-Based Clustering}
 
 Density-Based clustering methods rely on finding areas of high point-density separated by areas of low point-density.
-These algorithms generally do not work well when normal data are sparse.
+These algorithms generally do not work well when normal data are sparse or uniformly distributed.
 Some examples of density-based clustering algorithms are: 
 DBSCAN~\cite{ester_density-based_nodate}, 
 DENCLUE~\cite{Hinneburg1998Effic-5816}, 
@@ -50,7 +48,7 @@ etc.
 \subsubsection{Grid-Based Clustering}
 
 Grid-based clustering works via segmenting the entire space into a finite number of cells and then iterating over the cells to find regions of higher density.
-Utilizing the grid structure for clustering means that these algorithms typically scale better to larger datasets.
+Utilizing the grid structure for clustering means that these algorithms have typically scaled better to larger datasets.
 Some examples of grid-based clustering: 
 STING~\cite{sting:wang}, 
 Wavecluster~\cite{Wavecluster:Sheikholeslami:2000}, 
