@@ -1,13 +1,114 @@
 \section{Methods}
 \label{sec:methods}
 
-For this initial work, we have extended CHESS to a Manifold Learning algorithm.
-We use this method to address Anomaly and Outlier Detection.
-We use Distance-Based, Clustering-Based and Graph-Based procedures for detecting anomalous and outlier points/clusters.
-
-% TODO: Transition these definitions to algorithms
+For this work we have applied a multitude of different Distance-Based, Density-Based, and Graph-Based, approaches to detect anomalous and outlying points/clusters.
+In this section, we detail the specific algorithms employed from these various categories.
 
 \subsection{Distance-Based Outliers}
+
+\begin{algorithm}
+\DontPrintSemicolon
+\SetAlgoLined
+\KwData{manifold, depth}
+\KwResult{scores}
+ $scores \leftarrow \{\}$\;
+ $d \leftarrow depth$\;
+ \ForAll{cluster $c \in$ manifold.graph(d).clusters}{
+  \ForAll{$p \in c.points$}{
+   $scores[p] \leftarrow |c|$
+  }
+ }
+ normalize(scores)\;
+ \ForAll{$p \in scores$}{$scores[p] \leftarrow 1-p$}
+ \caption{Cluster Cardinality}
+ \label{alg-cc}
+\end{algorithm}
+
+\begin{algorithm}
+\DontPrintSemicolon
+\SetAlgoLined
+\KwData{manifold,depth}
+\KwResult{scores}
+ $scores \leftarrow \{\}$\;
+ $d \leftarrow depth$\;
+ \For{$d \in 1\cdots$ depth}{
+  \ForAll{cluster $c \in $manifold.graph(d).clusters}{
+    \ForAll{point $p \in c$}{
+     $scores[p] \leftarrow \frac{|c.parent|}{|c|\times d}$
+    }
+  }
+ }
+ normalize(scores)\;
+ \caption{Hierarchical}
+ \label{alg-hierarchical}
+\end{algorithm}
+
+
+\begin{algorithm}
+\DontPrintSemicolon
+\SetAlgoLined
+\KwData{manifold,depth,k}
+\KwResult{scores}
+ $scores \leftarrow \{\}$\;
+ $d \leftarrow $ depth\;
+ $g \leftarrow $ manifold.graph(d).clusters\;
+ \ForAll{cluster $c \in g$}{
+  $v \leftarrow |\{c' \in g | \delta(c,c') \le k\}|$\;
+  \ForAll{$p \in c$}{
+   scores[p] $\leftarrow v$\;
+  }
+ }
+ normalize(scores)\;
+ \ForAll{$p \in scores$}{$scores[p] \leftarrow 1-p$}
+ \caption{k-Neighborhood}
+ \label{alg-kneighborhood}
+\end{algorithm}
+
+
+% Must cite outrank paper for this one
+
+\begin{algorithm}
+\DontPrintSemicolon
+\SetAlgoLined
+\KwData{manifold,depth}
+\KwResult{scores}
+ $scores \leftarrow \{\}$\;
+ $d \leftarrow $ depth\;
+ $g \leftarrow $ manifold.graph(d).components\;
+ \ForAll{component $k \in g$}{
+  visits $\leftarrow$ outrank(k)\;
+  \ForAll{cluster $c \in k$}{
+   $v \leftarrow $visits[c]\;
+   \ForAll{$p \in c$}{
+    scores[p] $\leftarrow v$\;
+   }
+  }
+ }
+ normalize(scores)\;
+ \ForAll{$p \in scores$}{$scores[p] \leftarrow 1-p$}
+ \caption{Random Walk}
+ \label{alg-rw}
+\end{algorithm}
+
+\begin{algorithm}
+\DontPrintSemicolon
+\SetAlgoLined
+\KwData{manifold, depth}
+\KwResult{scores}
+ $scores \leftarrow \{\}$\;
+ $d \leftarrow depth$\;
+ \ForAll{component $k \in$ manifold.graph(d).components}{
+  \ForAll{cluster $c \in k$}{
+   \ForAll{$p \in c$}{
+    scores[p] $\leftarrow |k|$
+   }
+  }
+ }
+ normalize(scores)\;
+ \ForAll{$p \in scores$}{$scores[p] \leftarrow 1-p$}
+ \caption{Subgraph Cardinality}
+ \label{alg-sgc}
+\end{algorithm}
 
 \begin{enumerate}
     \item Sort all points $p \in \mathbb{P}$, where $\mathbb{P}$ is the data, by $f \equiv |B_D(p, r)|$ in ascending order.

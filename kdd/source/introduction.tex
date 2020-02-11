@@ -23,28 +23,31 @@ Abnormal instances of data, which can be called \textit{outliers} or \textit{ano
     \item adversarial attacks.
 \end{itemize}
 
-In this paper, we tackle this challenge using a novel Manifold Learning technique.
+In this paper, we tackle this challenge using a novel technique we call Clustered Approximate Manifold Learning (CLAM).
 % TODO: and compare our performance against oft-used state-of-the-art anomaly-detection techniques.
-We use CHESS~\cite{ishaq2019entropy} to build a clustering on the data.
-We then build a graph from the leaf-clusters by creating edges between clusters that have overlapping volumes.
-This process effectively learns the manifold that the data lie on.
-Once we have learned a manifold, an anomaly is simply a point which does not fall on that manifold.
+Derived from the work done for CHESS~\cite{ishaq2019entropy}, we begin by divisively clustering the data until every point is within its own cluster, as a singleton.
+We then delineate \textit{layers} of clusters at each depth in the tree.
+Each layer is comprised of all clusters that would have been leaf nodes if the tree building where to have been halted at the given depth.
 
-We test our methods on several synthetic datasets. These datasets all have the quality that the data occupy a non-linear, low-dimensional manifold in a high-dimensional embedding space.
+We then build a graph for each layer in the tree by creating edges between clusters that have overlapping volumes.
+This process effectively learns the manifold that the data lie on at various resolutions, given by the depth of the layer.
+Once we have learned a manifold, one can ask about the cardinality of various clusters at different depths, how connected a given cluster is, or even how often a cluster is visited over many different random walks across the manifold.
+
+We test our methods on 26 real-world datasets. 
+Each dataset contains a different amount of anomalous data, for a different domain.
 
 We consider several different definitions for outliers and anomalies.
+
 \begin{itemize}
-    \item Since CHESS produces a distance-based clustering, we adapt several classical distance-based definitions of outliers.
-    \item Since we have a clustering on our data, we can consider sparsely populated clusters to contain anomalies, thereby leveraging density-based definitions of outliers.
-    \item Since we have a graph on our data, we have access to several graph-based methods for anomaly detection.
-    \item Since search time is independent of the size of size of the data, we can use our method for novelty detection in streams of new data.
-    \item Since the clustering can be live-updated, we can adapt to changing behaviour in new data.
+    \item distance based: examining several classical distance-based definitions of outliers, relying on the fact that CLAM uses distance to cluster the data
+    \item density based: examining the cardinality of clusters, postulating that clusters with relatively low cardinality contain outliers
+    \item graph based: examining several graph-based methods for anomaly detection with graphs constructed from the layers of clusters
 \end{itemize}
 
 All forms of clustering hitherto have suffered from one defect or another.
 The most common deficiencies are: the effective treatment of high dimensionality, interpretability of results, and/or scalability to exponentially growing datasets ~\cite{rakesh_agrawal_automatic_1998}.
-With CHESS, we have largely alleviate these problems while also uncoupling search-time from the size of the data being searched.
-By defining edges via cluster-overlap, we build a graph representation of the manifold that the data occupy.
-We use our knowledge of this manifold to guide the detection of anomalies, outliers and novelties.
+With CLAM, we have largely alleviated these problems while also decoupling search-time from the size of the data being searched.
+By defining edges via cluster-overlap, we build a graph representation of the manifold that the data occupy at various resolutions.
+We then use our knowledge of this manifold to guide the detection of anomalies, outliers and novelties.
 
 % TODO: Add definitions: Anomaly, Outlier, Novelty, etc.
