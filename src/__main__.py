@@ -11,7 +11,7 @@ from sklearn.metrics import roc_auc_score
 
 from .datasets import DATASETS, get, read
 from .methods import METHODS
-from .plot import RESULT_PLOTS
+from .plot import RESULT_PLOTS, embed_umap, plot_2d
 
 np.random.seed(42)
 random.seed(42)
@@ -26,6 +26,7 @@ METRICS = {
 }
 
 BUILD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
+UMAP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'umaps'))
 
 
 def _manifold_path(dataset, metric, min_points, graph_ratio) -> str:
@@ -177,33 +178,41 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
 
 
 @cli.command()
-def plot_data():
-    # TODO
-    raise NotImplementedError
+@click.option('--dataset', type=click.Choice(DATASETS.keys()))
+@click.option('--metric', type=click.Choice(METRICS.keys()))
+@click.option('--neighbors', type=int, default=64)
+@click.option('--components', type=click.Choice([2, 3]), default=2)
+def plot_data(dataset, metric, neighbors, components):
+    datasets = [dataset] if dataset else DATASETS.keys()
+    metrics = [metric] if metric else METRICS.keys()
     for dataset in datasets:
-        normalize = dataset not in ['mnist']
-        data, labels = read(dataset, normalize)
-        min_points = 5 if data.shape[0] > 50_000 else 1
+        get(dataset)
+        data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
         for metric in metrics:
-            # TODO
-            for n_neighbors in [32]:
-                for n_components in [3]:
-                    filename = os.path.join(BUILD_DIR, dataset)
-                    filename = f'../data/{dataset}/umap/{n_neighbors}-{n_components}d-{metric}.pickle'
-                    if data.shape[1] > n_components:
-                        embedding = data
-                        # embedding = make_umap(data, n_neighbors, n_components, metric, filename)
-                    else:
-                        embedding = data
-                    title = f'{dataset}-{metric}-{n_neighbors}'
-                    if n_components == 3:
-                        # folder = f'../data/{dataset}/frames/{metric}-'
-                        # plot_3d(embedding, labels, title, folder)
+            logging.info('; '.join([
+                f'dataset: {dataset}',
+                f'metric: {metric}',
+                f'shape: {data.shape}',
+            ]))
+            filename = f'{UMAP_DIR}/{dataset}/'
+            if not os.path.exists(filename):
+                os.makedirs(filename)
+                os.makedirs(filename + 'umaps/')
+            if data.shape[1] <= components:
+                embedding = data
+            else:
+                suffix = f'umap{components}d-{neighbors}-{metric}.pickle'
+                embedding = embed_umap(data, neighbors, components, metric, filename + 'umaps/' + suffix)
+            title = f'{dataset}-{metric}-{neighbors}_{components}'
+            if components == 3:
+                # folder = f'../data/{dataset}/frames/{metric}-'
+                # plot_3d(embedding, labels, title, folder)
 
-                        pass
-                    if n_components == 2:
-                        # plot_2d(embedding, labels, title)
-                        pass
+                pass
+            elif components == 2:
+                suffix = f'umap{components}d-{neighbors}-{metric}.png'
+                plot_2d(embedding, labels, title, filename + suffix)
+    return
 
 
 @cli.command()
