@@ -1,3 +1,4 @@
+arff==0.9
 Click==7.0
 cycler==0.10.0
 h5py==2.10.0
@@ -7,7 +8,7 @@ llvmlite==0.31.0
 matplotlib==3.1.2
 numba==0.47.0
 numpy==1.18.1
-pyclam==0.1.1
+pyclam==0.2.0
 pyparsing==2.4.6
 python-dateutil==2.8.1
 scikit-learn==0.22.1

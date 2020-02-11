@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Dict, Tuple, List
 
@@ -133,25 +134,28 @@ def build_manifold(dataset: str, metric: str, subsample: bool = True) -> Manifol
 
 
 def explore_greengenes():
-    dataset = 'gg_mutated'
+    dataset, metric, max_depth = 'gg_mutated', 'hamming', 20
     data, labels = mutate_greengenes()
-    manifold: Manifold = Manifold(data, metric='hamming')
+    manifold: Manifold = Manifold(data, metric=metric)
 
-    filename = BASE_PATH + 'build/' + dataset + '.pickle'
+    build_dir = BASE_PATH + 'build/'
+    filename = build_dir + dataset + '.pickle'
     if os.path.exists(filename):
         with open(filename, 'rb') as fp:
             manifold = manifold.load(fp, data)
-    else:
-        manifold.build(
-            criterion.MaxDepth(100),
-            criterion.MinPoints(3),
-        )
-        os.makedirs(filename)
-        with open(filename, 'wb') as fp:
-            manifold.dump(fp)
+    if manifold.depth < max_depth:
+        manifold.build_tree(
+            criterion.MaxDepth(20),
+            criterion.MinPoints(10),
+        ).build_graphs()
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+    with open(filename, 'wb') as fp:
+        manifold.dump(fp)
 
     for method in METHODS:
         for depth in range(manifold.depth + 1):
+            logging.info(f'{dataset}, {metric}, {depth}/{manifold.depth}, {method}')
             roc_curve(
                 true_labels=labels,
                 anomalies=METHODS[method](manifold.graphs[depth]),
@@ -161,7 +165,6 @@ def explore_greengenes():
                 depth=depth,
                 save=True,
             )
-
     return
 
 

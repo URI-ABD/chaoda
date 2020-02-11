@@ -1,5 +1,4 @@
 import os
-import pickle
 from typing import Dict, List
 
 import numpy as np
@@ -45,11 +44,12 @@ def roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
     y_true, y_score = [], []
     [(y_true.append(true_labels[k]), y_score.append(v)) for k, v in anomalies.items()]
     fpr, tpr, _ = metrics.roc_curve(y_true, y_score)
+    auc = metrics.auc(fpr, tpr)
 
     plt.clf()
     fig = plt.figure()
     lw = 2
-    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.6f)' % metrics.auc(fpr, tpr))
+    plt.plot(fpr, tpr, color='darkorange', lw=lw, label=f'ROC curve (area = {auc:.6f})')
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1.05])
     plt.ylim([0.0, 1.05])
@@ -74,6 +74,7 @@ def roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
         line = '_'.join([f'{s:.16f}' for i, s in sorted(list(anomalies.items()))])
         outfile.write(f'{depth},{line}\n')
     plt.close('all')
+    return auc
 
 
 def confusion_matrix(
@@ -152,20 +153,28 @@ def embed_umap(
         metric: str,
         filename: str,
 ) -> np.ndarray:
-    if os.path.exists(filename):
-        with open(filename, 'rb') as infile:
-            embedding = pickle.load(infile)
-    else:
-        embedding = umap.UMAP(
+    if not os.path.exists(filename):
+        embedding: np.ndarray = umap.UMAP(
             n_neighbors=n_neighbors,
             n_components=n_components,
             metric=metric,
         ).fit_transform(data)
 
-        with open(filename, 'wb') as outfile:
-            pickle.dump(embedding, outfile)
+        saver: np.memmap = np.memmap(
+            filename=filename,
+            dtype=np.float32,
+            mode='w+',
+            shape=(data.shape[0], n_components),
+        )
+        saver[:] = embedding[:]
+        del saver
 
-    return embedding
+    return np.memmap(
+        filename=filename,
+        dtype=np.float32,
+        mode='r',
+        shape=(data.shape[0], n_components),
+    )
 
 
 def plot_2d(

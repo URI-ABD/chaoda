@@ -11,7 +11,15 @@ from sklearn.metrics import roc_auc_score
 
 from .datasets import DATASETS, get, read
 from .methods import METHODS
-from .plot import RESULT_PLOTS, embed_umap, plot_2d
+from .plot import RESULT_PLOTS, embed_umap, plot_2d, PLOT_DIR
+
+log_file = os.path.join(PLOT_DIR, 'roc_scores.log')
+logging.basicConfig(
+    filename=log_file,
+    filemode='w',
+    level=logging.INFO,
+    format="%(asctime)s:%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s",
+)
 
 np.random.seed(42)
 random.seed(42)
@@ -24,6 +32,7 @@ METRICS = {
     'euclidean': 'euclidean',
     'manhattan': 'cityblock',
 }
+
 
 BUILD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
 UMAP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'umaps'))
@@ -165,8 +174,7 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
                 if method in {'n_points_in_ball', 'k_nearest'} and depth < manifold.depth:
                     continue
                 for plot in plots:
-                    logging.info(f'{dataset}, {metric}, {depth}/{manifold.depth}, {method}, {plot}')
-                    RESULT_PLOTS[plot](
+                    auc = RESULT_PLOTS[plot](
                         labels,
                         METHODS[method](manifold.graphs[depth]),
                         dataset,
@@ -175,13 +183,14 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
                         depth,
                         save=True
                     )
+                    logging.info(f'{dataset}, {metric}, {depth}/{manifold.depth}, {method}, {plot}:-:{auc:.6f}')
 
 
 @cli.command()
 @click.option('--dataset', type=click.Choice(DATASETS.keys()))
 @click.option('--metric', type=click.Choice(METRICS.keys()))
-@click.option('--neighbors', type=int, default=64)
-@click.option('--components', type=click.Choice([2, 3]), default=2)
+@click.option('--neighbors', type=int, default=8)
+@click.option('--components', type=click.Choice([2, 3]), default=3)
 def plot_data(dataset, metric, neighbors, components):
     datasets = [dataset] if dataset else DATASETS.keys()
     metrics = [metric] if metric else METRICS.keys()
