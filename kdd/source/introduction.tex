@@ -3,43 +3,35 @@
 
 Detecting anomalies or outliers from a distribution of data is a well-studied problem in machine learning. When data occupy easily-described distributions, such as Gaussian, the task is relatively easy, requiring only that one identify that a datum is sufficiently far from the mean or median. However, in ``big data'' scenarios, data occupy high-dimensional spaces that do not behave intuitively. Furthermore, data may obey the ``manifold hypothesis''~\cite{fefferman2016testing}, occupying a low-dimensional manifold in the higher-dimensional embedding space. Detecting anomalies or outliers in such a landscape is not so easy; in particular, correctly identifying an anomalous datum that sits between ``branches'' of a tree-like manifold presents a challenge.
 
-Anomalies (data which don't belong to a particular distribution) and outliers (data which represent extrema of a distribution) can arise from many sources: errors in measurement or data collection; novel, previously-unseen instances of data; normal behavior evolving into abnormal; or adversarial attacks as seen in examples of malicious inputs to machine
+Anomalies (data which don't belong to a particular distribution) and outliers (data which represent extrema of a distribution) can arise from many sources: errors in measurement or data collection; novel, previously-unseen instances of data; normal behavior evolving into abnormal; or adversarial attacks as seen in examples of malicious inputs to machine-learning systems~\cite{schoolbus-ostrich}
 
-Abnormal instances of data, which can be called \textit{outliers} or \textit{anomalies}, arise from such varied sources as:
-\begin{itemize}
-    \item errors in measurements and data collection.
-    \item noise in data mimicking real outliers.
-    \item blurry boundaries between abnormal and normal behaviour.
-    \item normal behaviour evolving into abnormal behaviour.
-    \item novel never-before-seen instances in data.
-    \item adversarial attacks.
-\end{itemize}
 
-In this paper, we tackle this challenge using a novel technique we call Clustered Approximate Manifold Learning (CLAM).
-% TODO: and compare our performance against oft-used state-of-the-art anomaly-detection techniques.
-Derived from the work done for CHESS~\cite{ishaq2019entropy}, we begin by divisively clustering the data until every point is within its own cluster, as a singleton.
-We then delineate \textit{layers} of clusters at each depth in the tree.
-Each layer is comprised of all clusters that would have been leaf nodes if the tree building where to have been halted at the given depth.
 
-We then build a graph for each layer in the tree by creating edges between clusters that have overlapping volumes.
-This process effectively learns the manifold that the data lie on at various resolutions, given by the depth of the layer.
+%% The below all goes AFTER the related works.
+
+We introduce a novel technique, Clustered Learning of Approximate Manifolds (CLAM). This
+approach uses a divisive hierarchical clustering approach to learn a manifold in a
+Banach space~\cite{} defined by a distance metric. In actuality, our requirements are
+less strict; the space can be defined by a distance \textit{function} that does not obey
+the triangle inequality, though this is not always optimal. Given a learned manifold, we
+can almost trivially implement several anomaly-detection algorithms; in this manuscript,
+% NMD note: this cannot stay, much as I love it.
+we present a collection of five such algorithms implemented on CLAM: CHAODA (Clustered Hiearchical Anomaly and Outlier Detection Algorithms).
+
+
+The manifold learning component derives from prior work aimed at accelerating the task of approximate search on large data sets of high dimension, CHESS~\cite{ishaq2019entropy}. CLAM begins by divisively clustering the data until every point is within its own cluster, as a singleton.
+CLAM then delineates \textit{layers} of clusters at each depth in the tree.
+Each layer comprises all clusters that would have been leaf nodes if the tree building were to have been halted at the given depth.
+
+CLAM then build a graph for each layer in the tree by creating edges between clusters that have overlapping volumes.
+This process effectively learns the manifold on which the data lie at various resolutions, given by the depth of the layer. This is analogous to a ``filtration'' in computational topology~\cite{carlsson2009topology}.
 Once we have learned a manifold, one can ask about the cardinality of various clusters at different depths, how connected a given cluster is, or even how often a cluster is visited over many different random walks across the manifold.
 
 We test our methods on 26 real-world datasets. 
-Each dataset contains a different amount of anomalous data, for a different domain.
+Each dataset contains a different number of anomalous data, for a different domain.
+We consider several different definitions for outliers and anomalies: \textbf{distance-based}, examining several classical distance-based definitions of outliers, relying on CLAM's use of distance to cluster data; \textbf{density-based}, examining the cardinality of clusters, under the hypothesis that clusters with lower cardinality are more likely to contain outliers; \textbf{graph-based}, examining several graph-theoretic methods for anomaly detection, given graphs constructed from layers of clusters.
 
-We consider several different definitions for outliers and anomalies.
-
-\begin{itemize}
-    \item distance based: examining several classical distance-based definitions of outliers, relying on the fact that CLAM uses distance to cluster the data
-    \item density based: examining the cardinality of clusters, postulating that clusters with relatively low cardinality contain outliers
-    \item graph based: examining several graph-based methods for anomaly detection with graphs constructed from the layers of clusters
-\end{itemize}
-
-All forms of clustering hitherto have suffered from one defect or another.
-The most common deficiencies are: the effective treatment of high dimensionality, interpretability of results, and/or scalability to exponentially growing datasets ~\cite{rakesh_agrawal_automatic_1998}.
-With CLAM, we have largely alleviated these problems while also decoupling search-time from the size of the data being searched.
-By defining edges via cluster-overlap, we build a graph representation of the manifold that the data occupy at various resolutions.
-We then use our knowledge of this manifold to guide the detection of anomalies, outliers and novelties.
-
-% TODO: Add definitions: Anomaly, Outlier, Novelty, etc.
+Historically, clustering approaches have suffered from one several problems.
+The most common deficiencies are: the effective treatment of high dimensionality, interpretability of results, or scalability to exponentially-growing datasets ~\cite{rakesh_agrawal_automatic_1998}.
+With CLAM, we have largely alleviated these problems while also decoupling search time from the size of the data being searched.
+% unsure how much we can or want to say about search time given the page constraints
