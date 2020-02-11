@@ -1,11 +1,84 @@
 \section{Introduction}
 \label{sec:introduction}
 
-Detecting anomalies or outliers from a distribution of data is a well-studied problem in machine learning. When data occupy easily-described distributions, such as Gaussian, the task is relatively easy, requiring only that one identify that a datum is sufficiently far from the mean or median. However, in ``big data'' scenarios, data occupy high-dimensional spaces that do not behave intuitively. Furthermore, data may obey the ``manifold hypothesis''~\cite{fefferman2016testing}, occupying a low-dimensional manifold in the higher-dimensional embedding space. Detecting anomalies or outliers in such a landscape is not so easy; in particular, correctly identifying an anomalous datum that sits between ``branches'' of a tree-like manifold presents a challenge.
+Detecting anomalies or outliers from a distribution of data is a well-studied problem in machine learning.
+When data occupy easily-described distributions, such as Gaussian, the task is relatively easy, requiring only that one identify that a datum is sufficiently far from the mean or median. 
+However, in ``big data'' scenarios, data occupy high-dimensional spaces that do not behave intuitively. 
+Furthermore, data may obey the ``manifold hypothesis''~\cite{fefferman2016testing}, occupying a low-dimensional manifold in the higher-dimensional embedding space.
+Detecting anomalies or outliers in such a landscape is not so easy; in particular, correctly identifying an anomalous datum that sits between ``branches'' of a tree-like manifold presents a challenge.
 
 Anomalies (data which don't belong to a particular distribution) and outliers (data which represent extrema of a distribution) can arise from many sources: errors in measurement or data collection; novel, previously-unseen instances of data; normal behavior evolving into abnormal; or adversarial attacks as seen in examples of malicious inputs to machine-learning systems~\cite{schoolbus-ostrich}
 
 
+\subsection{Related Works}
+\label{sec:related_works}
+
+In this section, we consider previous works in distance-based, clustering-based, and graph-based approaches in outlier/anomaly detection.
+
+\subsection{Clustering-Based Approaches}
+
+Clustering data is universally centered around techniques for grouping instances in a way that provides value.
+This is generally done by assigning \textit{similar} points to the same cluster.
+Once clusters are formed, they can be used to inspect the data in great detail.
+For example, for any given point, one could estimate it's anomalousness by it's distance to it's nearest cluster.
+To determine if a cluster contains outliers, one could examine the relative cardinality of the cluster.
+
+We summarize several major approaches to clustering data.
+Note that there have been relatively few advancements in clustering techniques over the past decade~\cite{wang_progress_2019}. This may explain, or by attributable to, the observably poor performance, thus far, of clustering data in higher dimensional space~\cite{zhang_advancements_2013}.
+
+\subsubsection{Distance-Based Clustering}
+
+Distance-based clustering approaches rely on some distance measure to partition the data into some number of clusters.
+Within this approach, the numbers of clusters and/or the sizes of clusters are normally predefined: either user-specified, or chosen at random~\cite{wang_progress_2019}.
+Some examples of distance-based clustering are: 
+K-Means~\cite{macqueen_methods_nodate}, 
+PAM~\cite{kaufman_finding_nodate}, 
+CLARANS~\cite{ng_efficient_nodate}, 
+CLARA~\cite{kaufman_finding_nodate}, 
+etc.
+
+\subsubsection{Hierarchical Clustering}
+
+Hierarchical clustering methods typically utilize a tree-like structure, where points are allocated into leaf nodes~\cite{wang_progress_2019}.
+These tree-like structures can be created bottom-up (agglomerative clustering), or top-down (divisive clustering)~\cite{rakesh_agrawal_automatic_1998}.
+The major drawback of these methods is the high cost of pairwise difference computations at each level of the tree.
+Examples of hierarchical clustering include: 
+MST~\cite{charles_zahn_graph_1971}, 
+CURE~\cite{noauthor_cure:_nodate}, 
+CHAMELEON~\cite{karypis_chameleon:_nodate}, 
+etc.
+
+\subsubsection{Density-Based Clustering}
+
+Density-Based clustering methods rely on finding areas of high point-density separated by areas of low point-density.
+These algorithms generally do not work well when normal data are sparse or uniformly distributed.
+Some examples of density-based clustering algorithms are: 
+DBSCAN~\cite{ester_density-based_nodate}, 
+DENCLUE~\cite{Hinneburg1998Effic-5816}, 
+etc.
+
+\subsubsection{Grid-Based Clustering}
+
+Grid-based clustering works via segmenting the entire space into a finite number of cells and then iterating over the cells to find regions of higher density.
+Utilizing the grid structure for clustering means that these algorithms have typically scaled better to larger datasets.
+Some examples of grid-based clustering: 
+STING~\cite{sting:wang}, 
+Wavecluster~\cite{Wavecluster:Sheikholeslami:2000}, 
+DCluster,  % Paper does not exist????
+CLIQUE~\cite{rakesh_agrawal_automatic_1998}, 
+etc.
+
+\subsection{Distanced-Based Approaches}
+
+Distance-based methods attempt to find anomalous points via distance comparisons.
+These methods largely employ k-Nearest Neighbors as their substrate~\cite{wang_progress_2019}.
+They proceed in the following, slightly different, ways:
+
+\begin{enumerate}
+    \item Points with less than $p$ other points within a distance $d$ are outliers.
+    \item The top $n$ points whose distances to their $k^{th}$-nearest neighbor are the greatest are outliers.
+    \item The top $n$ points whose average distances to their $k^{th}$-nearest neighbor are the greatest are outliers.
+\end{enumerate}
 
 %% The below all goes AFTER the related works.
 
