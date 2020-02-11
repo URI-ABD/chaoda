@@ -1,10 +1,14 @@
 \section{Methodology}
 \label{sec:methodology}
 
-For this work we have applied a multitude of different Distance-Based, Density-Based, and Graph-Based, approaches to detect anomalous and outlying points/clusters.
+For this work we have applied a multitude of different approaches for detecting anomalies/outliers.
 In this section, we detail the specific algorithms employed from these various categories.
 
-\subsection{Distance-Based Outliers}
+\subsection{Cluster Cardinality}
+
+For this method we equate anomalousness with the cardinality of the cluster to which a point belongs.
+If a point belongs to a cluster with a very small number of points, it is more likely that the point is an anomaly or an outlier.
+Clusters that have a large cardinality are treated to be more likely to be normal.
 
 \begin{algorithm}
 \DontPrintSemicolon
@@ -23,6 +27,12 @@ In this section, we detail the specific algorithms employed from these various c
  \caption{Cluster Cardinality}
  \label{alg-cc}
 \end{algorithm}
+
+\subsection{Hierarchical}
+
+For this method, examine the ratio between the cardinality of a cluster and of it's parent.
+A point is considered to be more anomalous if it's parent cluster is large and it's cluster is small.
+Intuitively, this relationship would indicate that the point potentially sits off of the manifold.
 
 \begin{algorithm}
 \DontPrintSemicolon
@@ -43,6 +53,10 @@ In this section, we detail the specific algorithms employed from these various c
  \label{alg-hierarchical}
 \end{algorithm}
 
+\subsection{k-Neighborhood}
+
+For this approach, we examine the number of clusters reachable within $k$-steps of a cluster.
+The more clusters which are reachable from a given cluster, the more likely it is to not contain anomalous points.
 
 \begin{algorithm}
 \DontPrintSemicolon
@@ -64,8 +78,11 @@ In this section, we detail the specific algorithms employed from these various c
  \label{alg-kneighborhood}
 \end{algorithm}
 
+\subsection{Random Walk}
 
-% Must cite outrank paper for this one
+The general idea behind this approach, which is derived from Outrank~\cite{moonesinghe_outrank:_2008}, is to examine the frequency with which clusters are visited during $n$ random walks.
+Clusters that are visited more frequently, are again less likely to be anomalous.
+Clusters that are not visited frequently are more likely to be disconnected, and distant from the underlying manifold.
 
 \begin{algorithm}
 \DontPrintSemicolon
@@ -90,6 +107,11 @@ In this section, we detail the specific algorithms employed from these various c
  \label{alg-rw}
 \end{algorithm}
 
+\subsection{Subgraph Cardinality}
+
+In this approach we utilize the cardinality of each connected subcomponent of the graph at various depths to determine anomalousness.
+Similarly to some of our other approaches, we postulate that clusters which are members of sparse components are themselves more likely to be anomalous.
+
 \begin{algorithm}
 \DontPrintSemicolon
 \SetAlgoLined
@@ -110,47 +132,9 @@ In this section, we detail the specific algorithms employed from these various c
  \label{alg-sgc}
 \end{algorithm}
 
-\begin{enumerate}
-    \item Sort all points $p \in \mathbb{P}$, where $\mathbb{P}$ is the data, by $f \equiv |B_D(p, r)|$ in ascending order.
-    \begin{itemize}
-        \item If needed, increase $r$ to break ties.
-        \item The points with the smallest values of $f$ are the outliers.
-    \end{itemize}
-    \item Sort all points $p \in \mathbb{P}$ in descending order by the distance to their $k^{th}$ nearest neighbor.
-    \begin{itemize}
-        \item Consider how this distance changes as $k$ in increased.
-        \item The points with the highest such distances are the outliers.
-    \end{itemize}
-\end{enumerate}
-
-\subsection{Hierarchical-Clustering-Based Outliers}
-
-\begin{enumerate}
-    \item For a $parent$ cluster and its $left$ and $right$ child-clusters (assume without loss of generality that $|left| \leq |right|)$ define $f \equiv \frac{|left|}{|parent|}$. If $f \ll 0.5$ then points in the $|left|$ cluster are outliers.
-    \begin{itemize}
-        \item Use this definition recursively down the tree. The number of levels in the tree at which a point is labelled an outlier gives us a measure of the ``anomalousness'' of that point.
-    \end{itemize}
-\end{enumerate}
-
-\subsection{Graph-Based Outliers}
-
-\begin{enumerate}
-    \item The Outrank algorithm~\cite{moonesinghe_outrank:_2008} i.e. on a given graph-representation of data, initiate a random walk. The clusters that are visited least often are the outlier clusters.
-    \item Define the ``k-neighborhood'' of a clusters $c$ as the clusters that can be reached from $c$ in $k$ steps. Investigate how $|k-neighborhood|$ increases as $k$ in increased.
-    \begin{itemize}
-        \item $|k-neighborhood|$ should increase by $k^d$ where $d$ is \textit{local fractal dimension} of the data at the length-scale of the radii of the clusters that form the graph.
-        \item If the increase in $|k-neighborhood|$ of a cluster $c$ does not keep pace with $k^d$ as $k$ is increased then $c$ can be considered an outlier cluster.
-    \end{itemize}
-    \item Consider the connected components of the graph at a depth in the tree just before the graph shatters into many small components or isolated clusters.
-    \begin{itemize}
-        \item If a component contains too few points/clusters then those points/clusters can be considered outliers.
-        \item If a small component is connected to a larger component with a small number of edges then the smaller component may contain outliers.
-    \end{itemize}
-\end{enumerate}
+\subsection{Normalization Methods}
 
 Due to the wide range of possible measurements for ``anomalousness'' from our methods, we normalize our measurements.
-
-\subsection{Normalization Methods}
 
 \begin{enumerate}
     \item Min-Max Scaling:
