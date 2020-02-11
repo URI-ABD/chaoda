@@ -1,19 +1,27 @@
 \section{Conclusions}
 \label{sec:conclusions}
 
-We have presented CHAODA (Clustered Hierarchical Anomaly and Outlier Detection Algorithms), a collection of five algorithms that share the property of exploiting properties of a hierarchical cluster tree which learns a manifold in potentially high-dimensional space. All five algorithms are trivial to implement on top of a manifold-learning framework we call CLAM (Clustered Learning of Approximate Manifolds); CHAODA builds on this framework just like CHESS~\cite{ishaq2019entropy}, which learns a manifold in the same way, but for the purpose of accelerating approximate search. In CHESS, the geometric and topological properties of low fractal dimension and low metric entropy are advantages; indeed, CHESS does not perform particularly well if those properties are not present. CHAODA, on the other hand, while competitive with other state-of-the-art anomaly-detection approaches on ``easy'' data sets (we define as \textit{easy} any data set where a one-class SVM performs well), outperforms other current methods when the data exhibit precisely those properties that CHESS depends on for acceleration.
+We have presented CHAODA (Clustered Hierarchical Anomaly and Outlier Detection Algorithms), a collection of five algorithms that share the property of exploiting properties of a hierarchical cluster tree which learns a manifold in potentially high-dimensional space.
+All five algorithms are trivial to implement on top of a manifold-learning framework we call CLAM (Clustered Learning of Approximate Manifolds); CHAODA builds on this framework just like CHESS~\cite{ishaq2019entropy}, which learns a manifold in the same way, but for the purpose of accelerating approximate search.
+In CHESS, the geometric and topological properties of low fractal dimension and low metric entropy are advantages; indeed, CHESS does not perform particularly well if those properties are not present.
+CHAODA, on the other hand, while competitive with other state-of-the-art anomaly-detection approaches on ``easy'' data sets (we define as \textit{easy} any data set where a one-class SVM performs well), outperforms other current methods when the data exhibit precisely those properties that CHESS depends on for acceleration.
 
 % note: make sure the above statement is actually true! Need to look at t-SNE and UMAP 
 % for the breast cancer data set, as well as fractal dimension
 
 Some discussion about where CHAODA doesn't perform as well...
 
-One current limitation in CHAODA is that the depth of the cluster tree at which anomaly detection performs best is not the same for every data set, and thus our results could be seen as ``cherry-picking'' from a scattershot approach. However, ...
+One current limitation in CHAODA is that the depth of the cluster tree at which anomaly detection performs best is not the same for every data set, and thus our results could be seen as ``cherry-picking'' from a scattershot approach.
+Future work should certainly explore optimal stopping criteria so that this process can be further automated.
+However, one can clearly observe that the choice of depth is robust to minor deviations, and one can treat depth as a hyperparameter to the methods described.
 
-Need to look at local fractal dimension, or volume ratios, vs. optimal depth. Ideally we can say something like:
+% TODO: Need to look at local fractal dimension, or volume ratios, vs. optimal depth. Ideally we can say something like:
 
 The strong correlation between local fractal dimension and optimal tree depth suggests a guideline for determining an optimal tree depth directly from the data.
 
-The choice of distance function can also have a significant impact on anomaly-detection performance. In this case, domain knowledge is likely the best way to determine the distance function of choice. In future work, we seek to explore a more diverse collection of domain-appropriate distance functions, such as Wasserstein distance on images, or Levenshtein edit distance on strings. 
+The choice of distance function can also have a significant impact on anomaly-detection performance.
+In this case, domain knowledge is likely the best way to determine the distance function of choice.
+In future work, we seek to explore a more diverse collection of domain-appropriate distance functions, such as Wasserstein distance on images, or Levenshtein edit distance on strings. 
 
+% TODO: Have we proved this?
 Say something about applying CHAODA for inputs to an ANN, in particular detecting just-off-manifold malicious inputs, like the school bus / ostrich example.
