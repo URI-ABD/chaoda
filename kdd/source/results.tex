@@ -1,13 +1,12 @@
 \section{Results}
 \label{sec:results}
 
-We have implemented and tested four of our methods on several synthetic datasets.
-Each synthetic dataset embeds a low-dimensional manifold in high-dimensional space.
-In each dataset, approximately $5\%$ of the points are random noise, i.e. outliers.
-We examine the effectiveness our methods by their ability to find these outliers.
+We have implemented and tested our methods on 26 different real-world datasets.
+The vast majority of datasets studied were sourced from Outlier Detection Datasets (ODDS), which provided clear labels for normal and anomalous behavior.
+We examine the effectiveness of our methods by their ability to identify these outliers.
 
-Figure~\ref{results:datasets} shows the ``Bullseye'' data and the ``Spiral'' data in 2-space, and the ``Interlocking Tori'' data and the ``Skewer'' data in 3-space.
-We chose to test on non-linear manifolds because detecting anomalies on linear manifolds is fairly simple.
+Figure~\ref{results:datasets} shows % TODO
+We chose to use so many different real world datasets to ensure that our methods could generalize to many target audiences.
 
 \begin{figure*}[!t]
 \centering
@@ -19,19 +18,15 @@ We chose to test on non-linear manifolds because detecting anomalies on linear m
 \label{results:datasets}
 \end{figure*}
 
-Each dataset was clustered using the l2-distance metric.
-We have to be careful to not let the graph shatter and so we used the following stopping criteria for building the cluster tree:
+For each dataset, we clustered using Manhattan, Euclidean, and Cosine distance functions.
+Additionally, for this work, we allowed CLAM to cluster down until the manifold had thoroughly shattered.
+We then iterated over all depths to compute the area under the ROC-Curve.
 
-\begin{itemize}
-    \item Minimum Cluster Radius: 0.1
-    \item Minimum Cluster Cardinality: 1
-    \item Maximum Depth: 20
-\end{itemize}
+After computing anomalousness scores, we normalized each metric to a $[0, 1]$ range.
+For each dataset, we present a confusion matrix, a ROC curve, and the area under the ROC curve for a sample of optimal depths. 
+To demonstrate our methods are not overly-sensitive to depth we present all metrics in a 5-depth wide window.
 
-We chose to use Min-Max Scaling for normalizing anomalousness measures since it gives us a nice $[0, 1]$ range.
-For each dataset, we present the True Positive Rate (TPR), the True Negative Rate (TNR), and a histogram of measured anomalousness.
-
-Table~\ref{results:table} lists the True Positive Rate and the True Negative Rate for each dataset using each of four methods.
+Table~\ref{results:table} lists % TODO
 
 Figures~\ref{results:histograms:kth_nearest}, \ref{results:histograms:hierarchical}, \ref{results:histograms:outrank}, and \ref{results:histograms:k_neighborhood} shows histograms of measured anomalousness for points in each dataset for each method used.
 Higher values of anomalousness indicate higher confidence that the point is an anomaly.
