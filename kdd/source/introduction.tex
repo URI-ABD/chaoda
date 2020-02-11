@@ -9,7 +9,7 @@ Instead, data often obey the ``manifold hypothesis''~\cite{fefferman2016testing}
 This low-dimensional manifold may weave itself through the higher dimensional space much like a crumpled piece of paper can appear to be a sphere from a distance.
 Detecting anomalies or outliers in such a landscape is not so easy; in particular, correctly identifying an anomalous datum that sits within the gaps of a manifold presents a challenge.
 
-Anomalies (data which don't belong to a particular distribution) and outliers (data which represent extrema of a distribution) can arise from many sources: errors in measurement or data collection; novel, previously-unseen instances of data; normal behavior evolving into abnormal; or adversarial attacks as seen in examples of malicious inputs to machine-learning systems~\cite{schoolbus-ostrich}.
+Anomalies (data which don't belong to a particular distribution) and outliers (data which represent extrema of a distribution) can arise from many sources: errors in measurement or data collection; novel, previously-unseen instances of data; normal behavior evolving into abnormal; or adversarial attacks as seen in examples of malicious inputs to machine-learning systems~\cite{elsayed2018adversarial}.
 Current systems designed to detect anomalous behavior systematically fail for a wide variety of reasons.
 While some systems perform well with large quantities of data, such as grid-based approaches, they falter as dimensionality increases.
 Others may succeed with a larger number of dimensions, but perform too slowly to be truly useful.
@@ -25,65 +25,47 @@ To determine if a cluster contains outliers, one could examine the relative card
 We summarize several major approaches to clustering data.
 Note that there have been relatively few advancements in clustering techniques over the past decade~\cite{wang_progress_2019}. This may explain, or by attributable to, the observably poor performance, thus far, of clustering data in higher dimensional space~\cite{zhang_advancements_2013}.
 
-\subsubsection{Distance-Based Clustering}
-
 Distance-based clustering approaches rely on some distance measure to partition the data into some number of clusters.
 Within this approach, the numbers of clusters and/or the sizes of clusters are normally predefined: either user-specified, or chosen at random~\cite{wang_progress_2019}.
-Some examples of distance-based clustering are: 
-K-Means~\cite{macqueen_methods_nodate}, 
-PAM~\cite{kaufman_finding_nodate}, 
-CLARANS~\cite{ng_efficient_nodate}, 
-CLARA~\cite{kaufman_finding_nodate}, 
-etc.
-
-\subsubsection{Hierarchical Clustering}
+Some examples of distance-based clustering are:
+K-Means~\cite{macqueen1967some}, 
+PAM~\cite{kaufman2009finding}, 
+CLARANS~\cite{ng1994efficient} and
+CLARA~\cite{kaufman2009finding}.
 
 Hierarchical clustering methods typically utilize a tree-like structure, where points are allocated into leaf nodes~\cite{wang_progress_2019}.
 These tree-like structures can be created bottom-up (agglomerative clustering), or top-down (divisive clustering)~\cite{rakesh_agrawal_automatic_1998}.
 The major drawback of these methods is the high cost of pairwise difference computations at each level of the tree.
-Examples of hierarchical clustering include: 
+Examples of hierarchical clustering include 
 MST~\cite{charles_zahn_graph_1971}, 
-CURE~\cite{noauthor_cure:_nodate}, 
-CHAMELEON~\cite{karypis_chameleon:_nodate}, 
-etc.
-
-\subsubsection{Density-Based Clustering}
+CURE~\cite{guha1998cure} and
+CHAMELEON~\cite{karypis_chameleon:_nodate}.
 
 Density-Based clustering methods rely on finding areas of high point-density separated by areas of low point-density.
 These algorithms generally do not work well when normal data are sparse or uniformly distributed.
-Some examples of density-based clustering algorithms are: 
-DBSCAN~\cite{ester_density-based_nodate}, 
-DENCLUE~\cite{Hinneburg1998Effic-5816}, 
-etc.
-
-\subsubsection{Grid-Based Clustering}
+Some examples of density-based clustering algorithms are
+DBSCAN~\cite{ester_density-based_nodate} and
+DENCLUE~\cite{Hinneburg1998Effic-5816}.
 
 Grid-based clustering works via segmenting the entire space into a finite number of cells and then iterating over the cells to find regions of higher density.
 Utilizing the grid structure for clustering means that these algorithms have typically scaled better to larger datasets.
-Some examples of grid-based clustering: 
+Some examples of grid-based clustering include
 STING~\cite{sting:wang}, 
-Wavecluster~\cite{Wavecluster:Sheikholeslami:2000}, 
-CLIQUE~\cite{rakesh_agrawal_automatic_1998}, 
-etc.
+Wavecluster~\cite{Wavecluster:Sheikholeslami:2000}, and
+CLIQUE~\cite{rakesh_agrawal_automatic_1998}.
 
 \subsection{Distanced-Based Approaches}
 
 Distance-based methods attempt to find anomalous points via distance comparisons.
 These methods largely employ k-Nearest Neighbors as their substrate~\cite{wang_progress_2019}.
-They proceed in the following, slightly different, ways:
-
-\begin{enumerate}
-    \item Points with less than $p$ other points within a distance $d$ are outliers.
-    \item The top $n$ points whose distances to their $k^{th}$-nearest neighbor are the greatest are outliers.
-    \item The top $n$ points whose average distances to their $k^{th}$-nearest neighbor are the greatest are outliers.
-\end{enumerate}
+Each method uses one of the following approaches: points with fewer than $p$ other points within some distance $d$ are outliers; the $n$ points with the greatest distances to their $k^{th}-$nearest neighbor are outliers; or the $n$ points with the greatest average distance to their $k$ nearest neighbors are outliers.
 
 \subsection{CHAODA}
 
 In this paper we introduce a novel technique, Clustered Learning of Approximate Manifolds (CLAM).
-This approach uses a divisive hierarchical clustering approach to learn a manifold in a Banach space~\cite{} defined by a distance metric.
+This approach uses a divisive hierarchical clustering approach to learn a manifold in a Banach space~\cite{banach1929fonctionnelles} defined by a distance metric.
 In actuality, our requirements are less strict; the space can be defined by a distance \textit{function} that does not obey the triangle inequality, though this is not always optimal. 
-Given a learned approximate manifold, we can \textit{almost} trivially implement several anomaly-detection algorithms; in this manuscript, we present a collection of five such algorithms implemented on CLAM: CHAODA (Clustered Hierarchical Anomaly and Outlier Detection Algorithms).
+Given a learned approximate manifold, we can almost trivially implement several anomaly-detection algorithms; in this manuscript, we present a collection of five such algorithms implemented on CLAM: CHAODA (Clustered Hierarchical Anomaly and Outlier Detection Algorithms).
 
 The manifold learning component derives from prior work aimed at accelerating the task of approximate search on large data sets of high dimension, CHESS~\cite{ishaq2019entropy}.
 CLAM begins by divisively clustering the data until every point is within its own cluster, as a singleton.
