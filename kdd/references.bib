@@ -75,13 +75,12 @@
 	file = {Wang et al. - 2019 - Progress in Outlier Detection Techniques A Survey.pdf:C\:\\Users\\thowa\\MEGA\\Zotero\\storage\\7LPBQHX9\\Wang et al. - 2019 - Progress in Outlier Detection Techniques A Survey.pdf:application/pdf}
 }
 
-@article{ramaswamy_efcient_nodate,
-	title = {Efﬁcient Algorithms for Mining Outliers from Large Data Sets},
-	abstract = {In this paper, we propose a novel formulation for distance-based outliers that is based on the distance of a point from its ¥£ ¤§¦ nearest neighbor. We rank each point on the basis of its distance to its £ ¤§¦ nearest neighbor and declare the top ¨ points in this ranking to be outliers. In addition to developing relatively straightforward solutions to ﬁnding such outliers based on the classical nestedloop join and index join algorithms, we develop a highly efﬁcient partition-based algorithm for mining outliers. This algorithm ﬁrst partitions the input data set into disjoint subsets, and then prunes entire partitions as soon as it is determined that they cannot contain outliers. This results in substantial savings in computation. We present the results of an extensive experimental study on real-life and synthetic data sets. The results from a real-life {NBA} database highlight and reveal several expected and unexpected aspects of the database. The results from a study on synthetic data sets demonstrate that the partition-based algorithm scales well with respect to both data set size and data set dimensionality.},
-	pages = {12},
-	author = {Ramaswamy, Sridhar and Rastogi, Rajeev and Shim, Kyuseok},
-	langid = {english},
-	file = {Ramaswamy et al. - Efﬁcient Algorithms for Mining Outliers from Large.pdf:C\:\\Users\\thowa\\MEGA\\Zotero\\storage\\H5QLNMRQ\\Ramaswamy et al. - Efﬁcient Algorithms for Mining Outliers from Large.pdf:application/pdf}
+@inproceedings{ramaswamy2000efficient,
+  title={Efficient algorithms for mining outliers from large data sets},
+  author={Ramaswamy, Sridhar and Rastogi, Rajeev and Shim, Kyuseok},
+  booktitle={Proceedings of the 2000 ACM SIGMOD international conference on Management of data},
+  pages={427--438},
+  year={2000}
 }
 
 @article{zhang_advancements_2013,
@@ -135,38 +134,41 @@
 	file = {Akoglu et al. - 2015 - Graph based anomaly detection and description a s.pdf:C\:\\Users\\thowa\\MEGA\\Zotero\\storage\\KWL95C55\\Akoglu et al. - 2015 - Graph based anomaly detection and description a s.pdf:application/pdf}
 }
 
-@article{kaufman_finding_nodate,
-	title = {Finding Groups in Data, An Introduction to Cluster Analysis},
-	pages = {15},
-	author = {Kaufman, Leonard and Rousseeuw, Peter J},
-	langid = {english},
-	file = {Kaufman and Rousseeuw - Finding Groups in Data, An Introduction to Cluster.pdf:C\:\\Users\\thowa\\MEGA\\Zotero\\storage\\KK2EPFV2\\Kaufman and Rousseeuw - Finding Groups in Data, An Introduction to Cluster.pdf:application/pdf}
+@book{kaufman2009finding,
+  title={Finding groups in data: an introduction to cluster analysis},
+  author={Kaufman, Leonard and Rousseeuw, Peter J},
+  volume={344},
+  year={2009},
+  publisher={John Wiley \& Sons}
+}
 }
 
-@article{ng_efficient_nodate,
-	title = {Efficient and Effective Clustering Methods for Spatial Data Mining},
-	abstract = {Spatial data mining is the discovery of interesting relationships and characteristics that may exist implicitly in spatial databases. In this paper, we explore whether clustering methods have a role to play in spatial data mining. To this end, we develop a new clustering method called {CLAHANS} which is based on randomized search. We also develop two spatial data mining algorithms that use {CLAHANS}. Our analysis and experiments show that with the assistance of {CLAHANS}, these two algorithms are very effective and can lead to discoveries that are difficult to find with current spatial data mining algorithms. Furthermore, experiments conducted to compare the performance of {CLAHANS} with that of existing clustering methods show that {CLAHANS} is the most efficient.},
-	pages = {12},
-	author = {Ng, Raymond T and Han, Jiawei},
-	langid = {english},
-	file = {Ng and Han - Efficient and Effective Clustering Methods for Spa.pdf:C\:\\Users\\thowa\\MEGA\\Zotero\\storage\\YXBLIZ7X\\Ng and Han - Efficient and Effective Clustering Methods for Spa.pdf:application/pdf}
+@article{ng1994efficient,
+  title={:" Efficient and Effective Clustering Methods for Spatial Data Mining", Proc. 20th Int. Conf. On Very Large Data Bases, Santiago, Chile, Morgan Kaufmann Publishers},
+  author={Ng, RT and Han, J},
+  year={1994}
 }
 
-@article{macqueen_methods_nodate,
-	title = {{SOME} {METHODS} {FOR} {CLASSIFICATION} {AND} {ANALYSIS} {OF} {MULTIVARIATE} {OBSERVATIONS}},
-	pages = {17},
-	journaltitle = {{MULTIVARIATE} {OBSERVATIONS}},
-	author = {Macqueen, J},
-	langid = {english},
-	file = {Macqueen - SOME METHODS FOR CLASSIFICATION AND ANALYSIS OF MU.pdf:C\:\\Users\\thowa\\MEGA\\Zotero\\storage\\G33PTWIY\\Macqueen - SOME METHODS FOR CLASSIFICATION AND ANALYSIS OF MU.pdf:application/pdf}
+@inproceedings{macqueen1967some,
+  title={Some methods for classification and analysis of multivariate observations},
+  author={MacQueen, James and others},
+  booktitle={Proceedings of the fifth Berkeley symposium on mathematical statistics and probability},
+  volume={1},
+  number={14},
+  pages={281--297},
+  year={1967},
+  organization={Oakland, CA, USA}
 }
 
-@article{noauthor_cure:_nodate,
-	title = {{CURE}: An Efficient Clustering Algorithm for Large Databases},
-	abstract = {Clustering, in data mining, is useful for discovering groups and identifying interesting distributions in the underlying data. Traditional clustering algorithms either favor clusters with spherical shapes and similar sizes, or are very fragile in the presence of outliers. We propose a new clustering algorithm called {CURE} that is more robust to outliers, and identifies clusters having non-spherical shapes and wide variances in size. {CURE} achieves this by representing each cluster by a certain fixed number of points that are generated by selecting well scattered points from the cluster and then shrinking them toward the center of the cluster by a specified fraction. Having more than one representative point per cluster allows {CURE} to adjust well to the geometry of non-spherical shapes and the shrinking helps to dampen the effects of outliers. To handle large databases, {CURE} employs a combination of random sampling and partitioning. A random sample drawn from the data set is first partitioned and each partition is partially clustered. The partial clusters are then clustered in a second pass to yield the desired clusters. Our experimental results confirm that the quality of clusters produced by {CURE} is much better than those found by existing algorithms. Furthermore, they demonstrate that random sampling and partitioning enable {CURE} to not only outperform existing algorithms but also to scale well for large databases without sacrificing clustering quality.},
-	pages = {12},
-	langid = {english},
-	file = {CURE An Efficient Clustering Algorithm for Large .pdf:C\:\\Users\\thowa\\MEGA\\Zotero\\storage\\6IAIB85T\\CURE An Efficient Clustering Algorithm for Large .pdf:application/pdf}
+@article{guha1998cure,
+  title={CURE: an efficient clustering algorithm for large databases},
+  author={Guha, Sudipto and Rastogi, Rajeev and Shim, Kyuseok},
+  journal={ACM Sigmod record},
+  volume={27},
+  number={2},
+  pages={73--84},
+  year={1998},
+  publisher={ACM New York, NY, USA}
 }
 
 @article{moonesinghe_outrank:_2008,
@@ -3225,3 +3227,21 @@ year = {2016},
 title = {{ODDS} Library},
 url ={http://odds.cs.stonybrook.edu},
 institution = {Stony Brook University, Department of Computer Sciences} }
+
+@article{banach1929fonctionnelles,
+  title={Sur les fonctionnelles lin{\'e}aires II},
+  author={Banach, Stefan},
+  journal={Studia Mathematica},
+  volume={1},
+  pages={223--239},
+  year={1929},
+  publisher={Instytut Matematyczny Polskiej Akademii Nauk}
+}
+
+@inproceedings{elsayed2018adversarial,
+  title={Adversarial examples that fool both computer vision and time-limited humans},
+  author={Elsayed, Gamaleldin and Shankar, Shreya and Cheung, Brian and Papernot, Nicolas and Kurakin, Alexey and Goodfellow, Ian and Sohl-Dickstein, Jascha},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={3910--3920},
+  year={2018}
+}
