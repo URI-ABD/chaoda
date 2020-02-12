@@ -160,6 +160,6 @@ METHODS = {
     # 'k_nearest': k_nearest_neighbors_anomalies,
     'k_neighborhood': k_neighborhood_anomalies,
     # 'n_points_in_ball': n_points_in_ball,
-    'random_walk': outrank_anomalies,
+    # 'random_walk': outrank_anomalies,
     'subgraph_cardinality': subgraph_cardinality_anomalies,
 }

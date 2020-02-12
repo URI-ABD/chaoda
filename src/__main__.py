@@ -13,14 +13,6 @@ from .datasets import DATASETS, get, read
 from .methods import METHODS
 from .plot import RESULT_PLOTS, embed_umap, plot_2d, PLOT_DIR
 
-log_file = os.path.join(PLOT_DIR, 'roc_scores.log')
-logging.basicConfig(
-    filename=log_file,
-    filemode='w',
-    level=logging.INFO,
-    format="%(asctime)s:%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s",
-)
-
 np.random.seed(42)
 random.seed(42)
 
@@ -73,10 +65,15 @@ def cli():
 @cli.command()
 @click.option('--dataset', type=click.Choice(DATASETS.keys()))
 @click.option('--metric', type=click.Choice(METRICS.keys()))
-@click.option('--max-depth', type=int, default=100)
+@click.option('--max-depth', type=int, default=30)
 @click.option('--min-points', type=int, default=3)
 @click.option('--graph-ratio', type=int, default=100)
 def build(dataset, metric, max_depth, min_points, graph_ratio):
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s:%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s",
+        force=True,
+    )
     datasets = [dataset] if dataset else DATASETS.keys()
     metrics = [metric] if metric else METRICS.keys()
 
@@ -93,7 +90,7 @@ def build(dataset, metric, max_depth, min_points, graph_ratio):
             ]))
             manifold = Manifold(data, METRICS[metric])
 
-            min_points = max(3, min_points) if data.shape[0] > 10_000 else 3
+            min_points = max(10, min_points) if data.shape[0] > 10_000 else 3
             filepath = _manifold_path(dataset, metric, min_points, graph_ratio)
             if os.path.exists(filepath):
                 with open(filepath, 'rb') as fp:
@@ -165,6 +162,18 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
     for manifold in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
         meta = _meta_from_path(manifold)
         dataset, metric = str(meta['dataset']), meta['metric']
+        if dataset not in DATASETS:
+            continue
+        log_file = os.path.join(PLOT_DIR, dataset)
+        os.makedirs(log_file, exist_ok=True)
+        log_file = os.path.join(log_file, 'roc_scores.log')
+        logging.basicConfig(
+            filename=log_file,
+            filemode='w',
+            level=logging.INFO,
+            format="%(asctime)s:%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s",
+            force=True,
+        )
         data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
         with open(manifold, 'rb') as fp:
             logging.info(f'loading manifold {manifold}')
@@ -184,6 +193,7 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
                         save=True
                     )
                     logging.info(f'{dataset}, {metric}, {depth}/{manifold.depth}, {method}, {plot}:-:{auc:.6f}')
+    return
 
 
 @cli.command()

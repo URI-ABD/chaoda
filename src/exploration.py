@@ -4,13 +4,14 @@ from typing import Dict, Tuple, List
 
 import numpy as np
 from pyclam import Manifold, criterion
-from src.methods import METHODS
-from src.plot import roc_curve
+from methods import METHODS
+from plot import roc_curve, PLOT_DIR
 
 np.random.seed(42)
 
 
 BASE_PATH = '/data/nishaq/'
+ROC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 APOGEE2_PATH = BASE_PATH + 'APOGEE2/'
 APOGEE2 = {
@@ -124,8 +125,8 @@ def build_manifold(dataset: str, metric: str, subsample: bool = True) -> Manifol
             manifold = manifold.load(fp, data)
     else:
         manifold.build(
-            criterion.MaxDepth(100),
-            criterion.MinPoints(3),
+            criterion.MaxDepth(50),
+            criterion.MinPoints(10),
         )
         os.makedirs(filename)
         with open(filename, 'wb') as fp:
@@ -134,29 +135,46 @@ def build_manifold(dataset: str, metric: str, subsample: bool = True) -> Manifol
 
 
 def explore_greengenes():
-    dataset, metric, max_depth = 'gg_mutated', 'hamming', 20
+    dataset, metric = 'gg_mutated', 'hamming'
     data, labels = mutate_greengenes()
+
     manifold: Manifold = Manifold(data, metric=metric)
 
-    build_dir = BASE_PATH + 'build/'
-    filename = build_dir + dataset + '.pickle'
+    build_dir = ROC_PATH + '/build/'
+    old_max_depth, old_min_points = 30, 1
+    filename = f'{build_dir}{dataset}-{old_max_depth}-{old_min_points}.pickle'
     if os.path.exists(filename):
         with open(filename, 'rb') as fp:
             manifold = manifold.load(fp, data)
-    if manifold.depth < max_depth:
-        manifold.build_tree(
-            criterion.MaxDepth(20),
-            criterion.MinPoints(10),
-        ).build_graphs()
-    if not os.path.exists(build_dir):
-        os.makedirs(build_dir)
+
+    # old_max_depth = manifold.depth
+    max_depth, min_points = 30, 1
+    # if manifold.depth < max_depth:
+    #     manifold.build_tree(
+    #         criterion.MaxDepth(max_depth),
+    #         criterion.MinPoints(min_points),
+    #     ).build_graphs()
+    
+    os.makedirs(build_dir, exist_ok=True)
+
+    filename = f'{build_dir}{dataset}-{max_depth}-{min_points}.pickle'
     with open(filename, 'wb') as fp:
         manifold.dump(fp)
 
+    log_file = os.path.join(PLOT_DIR, dataset)
+    os.makedirs(log_file, exist_ok=True)
+    log_file = os.path.join(log_file, 'roc_scores.log')
+    logging.basicConfig(
+        filename=log_file,
+        filemode='w',
+        level=logging.INFO,
+        format="%(asctime)s:%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s",
+        force=True,
+    )
+
     for method in METHODS:
-        for depth in range(manifold.depth + 1):
-            logging.info(f'{dataset}, {metric}, {depth}/{manifold.depth}, {method}')
-            roc_curve(
+        for depth in range(0, manifold.depth + 1):
+            auc = roc_curve(
                 true_labels=labels,
                 anomalies=METHODS[method](manifold.graphs[depth]),
                 dataset=dataset,
@@ -165,10 +183,12 @@ def explore_greengenes():
                 depth=depth,
                 save=True,
             )
+            logging.info(f'{dataset}, {metric}, {depth}/{manifold.depth}, {method}, roc_curve:-:{auc:.6f}')
     return
 
 
 if __name__ == '__main__':
     # build_manifold('apogee2', 'euclidean')
     # build_manifold('greegenes', 'hamming')
+    # mutate_greengenes()
     explore_greengenes()
