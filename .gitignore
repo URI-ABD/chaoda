@@ -286,4 +286,5 @@ logs
 .venv
 plots
 build
+embeddings
 normalized
