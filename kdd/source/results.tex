@@ -28,110 +28,194 @@ To demonstrate our methods are not overly-sensitive to depth we present all metr
 
 Table~\ref{results:table} lists % TODO
 
-Figures~\ref{results:histograms:kth_nearest}, \ref{results:histograms:hierarchical}, \ref{results:histograms:outrank}, and \ref{results:histograms:k_neighborhood} shows histograms of measured anomalousness for points in each dataset for each method used.
-Higher values of anomalousness indicate higher confidence that the point is an anomaly.
-
 \begin{table*}[!t]
 \renewcommand{\arraystretch}{1.3}
-\caption{Anomaly Detection performance on the synthetic datasets.}
+\caption{Comparison of CHAODA with state-of-the-art algorithms}
 \label{results:table}
 \centering
-\begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
 \hline
- & \multicolumn{2}{c|}{\textbf{Bullseye}} & \multicolumn{2}{c|}{\textbf{Spiral}} & \multicolumn{2}{c|}{\textbf{Interlocking}} & \multicolumn{2}{c|}{\textbf{Skewer}} \\
-  & \multicolumn{2}{c|}{\textbf{ }} & \multicolumn{2}{c|}{\textbf{ }} & \multicolumn{2}{c|}{\textbf{Tori}} & \multicolumn{2}{c|}{\textbf{ }} \\
+{\textbf{Dataset}} & {\textbf{Metric}} & {\textbf{Method}} & \multicolumn{3}{c|}{\textbf{AUC ROC}} & \multicolumn{10}{c|}{\textbf{ }} \\
 \hline
- & \bfseries TPR & \bfseries TNR & \bfseries TPR & \bfseries TNR & \bfseries TPR & \bfseries TNR & \bfseries TPR & \bfseries TNR \\
+ &  &  & d - 2 & d & d + 2 &  &  &  &  &  &  &  &  &  & \\
 \hline
-\bfseries k$^{th}$-nearest Distances & 1.000 & 0.979 & 1.000 & 0.020 & 1.000 & 0.979 & 1.000 & 0.979 \\
+\bfseries lympho & \bfseries cosine & \bfseries cluster\_cardinality & 0.926 & 0.949 & 0.838 &  &  &  &  &  &  &  &  &  & \\ 
 \hline
-\bfseries Hierarchical Sparseness & 0.985 & 0.940 & 1.000 & 0.969 & 0.992 & 0.961 & 1.000 & 0.967 \\
+\bfseries lympho & \bfseries cosine & \bfseries hierarchical & 0.927 & 0.940 & 0.938 &  &  &  &  &  &  &  &  &  & \\ 
 \hline
-\bfseries Outrank Algorithm & 0.998 & 0.990 & 1.000 & 0.987 & 1.000 & 0.989 & 1.000 & 0.989 \\
+\bfseries lympho & \bfseries cosine & \bfseries k\_neighborhood & 0.500 & 0.888 & 0.725 &  &  &  &  &  &  &  &  &  & \\ 
 \hline
-\bfseries k-Neighborhood Size & 0.996 & 0.990 & 0.990 & 0.984 & 0.761 & 0.986 & 0.975 & 0.983 \\
+\bfseries lympho & \bfseries cosine & \bfseries random\_walk & 0.803 & 0.964 & 0.952 &  &  &  &  &  &  &  &  &  & \\ 
 \hline
+\bfseries lympho & \bfseries cosine & \bfseries subgraph\_cardinality & 0.583 & 0.739 & 0.729 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+\bfseries lympho & \bfseries euclidean & \bfseries cluster\_cardinality & 0.672 & 0.904 & 0.887 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+\bfseries lympho & \bfseries euclidean & \bfseries hierarchical & 0.672 & 0.869 & 0.863 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+\bfseries lympho & \bfseries euclidean & \bfseries k\_neighborhood & 0.500 & 0.573 & 0.500 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+\bfseries lympho & \bfseries euclidean & \bfseries random\_walk & 0.704 & 0.783 & 0.692 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+\bfseries lympho & \bfseries euclidean & \bfseries subgraph\_cardinality & 0.500 & 0.500 & 0.500 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+\bfseries lympho & \bfseries manhattan & \bfseries cluster\_cardinality & 0.793 & 0.965 & 0.962 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+\bfseries lympho & \bfseries manhattan & \bfseries hierarchical & 0.935 & 0.965 & 0.955 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+\bfseries lympho & \bfseries manhattan & \bfseries k\_neighborhood & 0.648 & 0.818 & 0.818 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+\bfseries lympho & \bfseries manhattan & \bfseries random\_walk & 0.763 & 0.960 & 0.955 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+\bfseries lympho & \bfseries manhattan & \bfseries subgraph\_cardinality & 0.583 & 0.663 & 0.660 &  &  &  &  &  &  &  &  &  & \\ 
+\hline
+
 \end{tabular}
 \end{table*}
 
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=2.5in]{static/bullseye_kth_nearest.png}\includegraphics[width=2.5in]{static/spiral_kth_nearest.png}
+% Annthyroid
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/annthyroid-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/annthyroid-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/annthyroid-manhattan.png}
 
-\includegraphics[width=2.5in]{static/interlocking_tori_kth_nearest.png}\includegraphics[width=2.5in]{static/skewer_kth_nearest.png}
+% Arrhythmia
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/arrhythmia-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/arrhythmia-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/arrhythmia-manhattan.png}
 
-\caption{
-Measures of anomalousness using the k$^{th}$-nearest Distances method on the Bullseye (top-left), Spiral (top-right), Interlocking-Tori (bottom-left), and the Skewer (bottom-right) datasets.
-}
+% BreastW
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/breastw-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/breastw-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/breastw-manhattan.png}
 
-\label{results:histograms:kth_nearest}
-\end{figure*}
+% Cardio
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/cardio-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/cardio-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/cardio-manhattan.png}
 
-% 1.7in seems to be the right width for four-across images
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=1.7in]{static/bullseye_hierarchical.png}
-\includegraphics[width=1.7in]{static/spiral_hierarchical.png}
-\includegraphics[width=1.7in]{static/interlocking_tori_hierarchical.png}
-\includegraphics[width=1.7in]{static/skewer_hierarchical.png}
+% Glass
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/glass-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/glass-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/glass-manhattan.png}
 
-\caption{
-Measures of anomalousness using the Hierarchical Sparseness method on the Bullseye (top-left), Spiral (top-right), Interlocking-Tori (bottom-left), and the Skewer (bottom-right) datasets.
-}
-
-\label{results:histograms:hierarchical}
-\end{figure*}
-
-
-% 1.7in seems to be the right width for four-across images
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=1.7in]{static/bullseye_hierarchical.png}
-\includegraphics[width=1.7in]{static/spiral_hierarchical.png}
-\includegraphics[width=1.7in]{static/interlocking_tori_hierarchical.png}
-\includegraphics[width=1.7in]{static/skewer_hierarchical.png}
-\includegraphics[width=1.7in]{static/bullseye_hierarchical.png}
-\includegraphics[width=1.7in]{static/spiral_hierarchical.png}
-\includegraphics[width=1.7in]{static/interlocking_tori_hierarchical.png}
-\includegraphics[width=1.7in]{static/skewer_hierarchical.png}
-\includegraphics[width=1.7in]{static/bullseye_hierarchical.png}
-\includegraphics[width=1.7in]{static/spiral_hierarchical.png}
-\includegraphics[width=1.7in]{static/interlocking_tori_hierarchical.png}
-\includegraphics[width=1.7in]{static/skewer_hierarchical.png}
+% Ionosphere
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/ionosphere-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/ionosphere-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/ionosphere-manhattan.png}
 
 \caption{
-Example of a grid of regular-sized images.
+Plots of ROC-AUC vs Depth for our mearures of Anomolousness.
 }
 
-\label{results:histograms:example}
+\label{results:datasets_1}
 \end{figure*}
-
 
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=2.5in]{static/bullseye_outrank.png}
-\includegraphics[width=2.5in]{static/spiral_outrank.png}
-\includegraphics[width=2.5in]{static/interlocking_tori_outrank.png}
-\includegraphics[width=2.5in]{static/skewer_outrank.png}
+% Lympho
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/lympho-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/lympho-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/lympho-manhattan.png}
+
+% Mnist
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/mnist-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/mnist-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/mnist-manhattan.png}
+
+% Musk
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/musk-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/musk-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/musk-manhattan.png}
+
+% Optdigits
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/optdigits-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/optdigits-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/optdigits-manhattan.png}
+
+% Pima
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/pima-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/pima-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/pima-manhattan.png}
+
+% Satellite
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/satellite-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/satellite-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/satellite-manhattan.png}
 
 \caption{
-Measures of anomalousness using the Outrank Algorithm on the Bullseye (top-left), Spiral (top-right), Interlocking-Tori (bottom-left), and the Skewer (bottom-right) datasets.
+Plots of ROC-AUC vs Depth for our mearures of Anomolousness.
 }
 
-\label{results:histograms:outrank}
+\label{results:datasets_2}
 \end{figure*}
 
-
-\begin{figure*}[!h]
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=2.5in]{static/bullseye_k_neighborhood.png}
-\includegraphics[width=2.5in]{static/spiral_k_neighborhood.png}
-\includegraphics[width=2.5in]{static/interlocking_tori_k_neighborhood.png}
-\includegraphics[width=2.5in]{static/skewer_k_neighborhood.png}
+% Satimage-2
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/satimage-2-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/satimage-2-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/satimage-2-manhattan.png}
+
+% Thyroid
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/thyroid-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/thyroid-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/thyroid-manhattan.png}
+
+% Vertebral
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/vertebral-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/vertebral-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/vertebral-manhattan.png}
+
+% Vowels
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/vowels-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/vowels-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/vowels-manhattan.png}
+
+% WBC
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/wbc-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/wbc-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/wbc-manhattan.png}
+
+% Wine
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/wine-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/wine-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/wine-manhattan.png}
+
+% HTTP
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/http-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/http-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/http-manhattan.png}
 
 \caption{
-Measures of anomalousness using the k-Neighborhood Size method on the Bullseye (top-left), Spiral (top-right), Interlocking-Tori (bottom-left), and the Skewer (bottom-right) datasets.
+Plots of ROC-AUC vs Depth for our mearures of Anomolousness.
 }
 
-\label{results:histograms:k_neighborhood}
+\label{results:datasets_3}
 \end{figure*}
+
+\begin{figure*}[!t]
+\centering
+% SMTP
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/smtp-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/smtp-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/smtp-manhattan.png}
+
+% Pendigits
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/pendigits-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/pendigits-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/pendigits-manhattan.png}
+
+% Mammography
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/mammography-cosine.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/mammography-euclidean.png}
+\includegraphics[width=2.2in]{kdd/static/auc_vs_depth/mammography-manhattan.png}
+
+\caption{
+Plots of ROC-AUC vs Depth for our mearures of Anomolousness.
+}
+
+\label{results:datasets_4}
+\end{figure*}
+
