@@ -1,3 +1,4 @@
+import numpy as np
 import os
 from typing import Dict, List
 from matplotlib import pyplot as plt
@@ -5,16 +6,15 @@ from matplotlib import pyplot as plt
 from src.datasets import DATASETS
 
 BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plots'))
-STATIC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'kdd', 'static'))
+STATIC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'kdd', 'static', 'auc_vs_depth'))
 
 
 def plot_auc_vs_depth(
         dataset: str,
-        plot_lines: Dict[str, Dict[str, List[float]]],
 ):
     metrics = ['cosine', 'euclidean', 'manhattan', 'hamming']
     methods = ['cluster_cardinality', 'hierarchical', 'k_neighborhood', 'random_walk', 'subgraph_cardinality']
-
+    plot_lines = get_plot_lines(dataset)
     for metric in metrics:
         if metric not in plot_lines:
             continue
@@ -73,7 +73,32 @@ def get_plot_lines(dataset: str) -> Dict[str, Dict[str, List[float]]]:
     return plot_lines
 
 
+def make_table(dataset: str):
+    metrics = ['cosine', 'euclidean', 'manhattan', 'hamming']
+    methods = ['cluster_cardinality', 'hierarchical', 'k_neighborhood', 'random_walk', 'subgraph_cardinality']
+    plot_lines = get_plot_lines(dataset)
+    for metric in metrics:
+        if metric not in plot_lines:
+            continue
+        method_lines = plot_lines[metric]
+        for method in methods:
+            if method not in method_lines:
+                continue
+            auc_scores = method_lines[method]
+            best_depth = int(np.argmax(auc_scores))
+            prev_depth = best_depth - 2 if best_depth > 1 else 0
+            next_depth = best_depth + 2 if best_depth < len(auc_scores) - 2 else len(auc_scores) - 1
+
+            best_score = auc_scores[best_depth]
+            prev_score = auc_scores[prev_depth]
+            next_score = auc_scores[next_depth]
+            line = f'{dataset} & {metric} & {method} & {prev_score:.3f} & {best_score:.3f} & {next_score:.3f} \\\\'
+            print(line)
+    return
+
+
 if __name__ == '__main__':
     os.makedirs(STATIC_PATH, exist_ok=True)
-    [plot_auc_vs_depth(dataset, get_plot_lines(dataset)) for dataset in DATASETS.keys()]
-    # [plot_auc_vs_depth(dataset, get_plot_lines(dataset)) for dataset in ['lympho']]
+    # print(list(DATASETS.keys()))
+    # [plot_auc_vs_depth(dataset) for dataset in DATASETS.keys()]
+    [make_table(dataset) for dataset in ['lympho']]

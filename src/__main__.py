@@ -169,7 +169,7 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
         log_file = os.path.join(log_file, 'roc_scores.log')
         logging.basicConfig(
             filename=log_file,
-            filemode='w',
+            # filemode='w',
             level=logging.INFO,
             format="%(asctime)s:%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s",
             force=True,
