@@ -39,6 +39,8 @@ def n_points_in_ball(graph: Graph) -> Dict[int, float]:
 def k_nearest_neighbors_anomalies(graph: Graph) -> Dict[int, float]:
     """ Determines anomalies by considering the kNearestNeighbors
     """
+    # TODO: fix subsampling
+
     manifold = graph.manifold
     data = manifold.data
 
@@ -52,14 +54,14 @@ def k_nearest_neighbors_anomalies(graph: Graph) -> Dict[int, float]:
 
 def hierarchical_anomalies(graph: Graph) -> Dict[int, float]:
     manifold = graph.manifold
-    depth = list(graph.clusters.keys())[0].depth
+    depth = graph.depth
     data = manifold.data
 
     results = {i: list() for i in range(data.shape[0])}
     for g in manifold.graphs[1: depth]:
-        for cluster in g.clusters.keys():
+        for cluster in g.clusters:
             parent = manifold.select(cluster.name[:-1])
-            f = 1. / (float(len(cluster.argpoints)) / len(parent.argpoints))
+            f = float(parent.cardinality) / (cluster.cardinality * np.sqrt(cluster.depth))
             [results[p].append(f) for p in cluster.argpoints]
             
     results = {k: sum(v) for k, v in results.items()}
@@ -73,16 +75,26 @@ def outrank_anomalies(graph: Graph) -> Dict[int, float]:
     :return: Dictionary of indexes in the data with the confidence (in the range 0. to 1.) that the point is an anomaly.
     """
     subgraphs: Set[Graph] = graph.subgraphs
-    anomalies: Dict[int, float] = dict()
+    scores: Dict[Cluster, float] = dict()
     for subgraph in subgraphs:
+        if subgraph.cardinality < 100:
+            sample_clusters = list(subgraph.clusters)
+        else:
+            sample_clusters = list(np.random.choice(list(subgraph.clusters), 100, False))
         results: Dict[Cluster, int] = subgraph.random_walks(
-            clusters=list(np.random.choice(list(subgraph.clusters.keys()), int(np.sqrt(subgraph.cardinality)))),
-            steps=max(int(np.sqrt(subgraph.cardinality)), 100),
-        )
-        anomalies.update({p: v for c, v in results.items() for p in c.argpoints})
-
+            clusters=sample_clusters,
+            steps=min(subgraph.cardinality, 100),
+        ) if subgraph.cardinality > 1 else {c: 1. for c in subgraph.clusters}
+        multiplier = np.sqrt(subgraph.population)
+        scores.update({c: float(v * multiplier) for c, v in results.items()})
+    anomalies: Dict[int, float] = {p: v for c, v in scores.items() for p in c.argpoints}
     anomalies = normalize(anomalies)
-    return {k: 1 - v for k, v in anomalies.items()}
+    return {k: 1. - v for k, v in anomalies.items()}
+
+
+"""         , cosine , euclidean , manhattan
+glass,      ,  81.2  ,   92.0    ,   93.7
+"""
 
 
 def k_neighborhood_anomalies(graph: Graph, k: int = 10) -> Dict[int, float]:
@@ -100,7 +112,7 @@ def k_neighborhood_anomalies(graph: Graph, k: int = 10) -> Dict[int, float]:
                 c = queue.popleft()
                 if c not in visited:
                     visited.add(c)
-                    [queue.append(neighbor) for neighbor in c.neighbors.keys()]
+                    [queue.append(neighbor) for neighbor in c.neighbors]
             else:
                 break
         return len(visited)
@@ -118,8 +130,8 @@ def cluster_cardinality_anomalies(graph: Graph) -> Dict[int, float]:
     :return: Dictionary of indexes in the data with the confidence (in the range 0. to 1.) that the point is an anomaly.
     """
     anomalies: Dict[int, float] = {
-        p: len(c.argpoints)
-        for c in graph.clusters.keys()
+        p: c.cardinality
+        for c in graph.clusters
         for p in c.argpoints
     }
     anomalies = normalize(anomalies)
@@ -133,9 +145,9 @@ def subgraph_cardinality_anomalies(graph: Graph) -> Dict[int, float]:
     :return: Dictionary of indexes in the data with the confidence (in the range 0. to 1.) that the point is an anomaly.
     """
     anomalies: Dict[int, float] = {
-        p: len(subgraph.clusters.keys())
+        p: subgraph.cardinality
         for subgraph in graph.subgraphs
-        for c in subgraph.clusters.keys()
+        for c in subgraph.clusters
         for p in c.argpoints
     }
     anomalies = normalize(anomalies)
@@ -148,6 +160,6 @@ METHODS = {
     # 'k_nearest': k_nearest_neighbors_anomalies,
     'k_neighborhood': k_neighborhood_anomalies,
     # 'n_points_in_ball': n_points_in_ball,
-    'random_walk': outrank_anomalies,
+    # 'random_walk': outrank_anomalies,
     'subgraph_cardinality': subgraph_cardinality_anomalies,
 }

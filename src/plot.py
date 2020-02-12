@@ -1,15 +1,12 @@
 import os
-import pickle
-from subprocess import run
 from typing import Dict, List
-from sklearn import metrics
 
 import numpy as np
 import umap
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 from mpl_toolkits.mplot3d import Axes3D
-
+from sklearn import metrics
 
 PLOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plots'))
 
@@ -36,7 +33,7 @@ def histogram(
     plt.ylim(ymax=np.ceil(max_freq / 10) * 10 if max_freq % 10 else max_freq + 10)
     if save is True:
         filepath = f'../data/{dataset}/plots/{metric}/{method}/{depth}-histogram.png'
-        make_folders(dataset, metric, method)
+        # make_folders(dataset, metric, method)
         fig.savefig(filepath)
     else:
         plt.show()
@@ -48,11 +45,12 @@ def roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
     [(y_true.append(true_labels[k]), y_score.append(v)) for k, v in anomalies.items()]
     print(sum(y_true))
     fpr, tpr, _ = metrics.roc_curve(y_true, y_score)
+    auc = metrics.auc(fpr, tpr)
 
     plt.clf()
     fig = plt.figure()
     lw = 2
-    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.6f)' % metrics.auc(fpr, tpr))
+    plt.plot(fpr, tpr, color='darkorange', lw=lw, label=f'ROC curve (area = {auc:.6f})')
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1.05])
     plt.ylim([0.0, 1.05])
@@ -77,6 +75,7 @@ def roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
         line = '_'.join([f'{s:.16f}' for i, s in sorted(list(anomalies.items()))])
         outfile.write(f'{depth},{line}\n')
     plt.close('all')
+    return auc
 
 
 def confusion_matrix(
@@ -92,19 +91,19 @@ def confusion_matrix(
     n = float(len([k for k in anomalies.keys() if true_labels[k] == 0]))
 
     threshold = float(np.percentile(list(anomalies.values()), 95))
-    values = [float(v) for v in anomalies.values()]
+    # values = [float(v) for v in anomalies.values()]
     tp = float(sum([v > threshold for k, v in anomalies.items() if true_labels[k] == 1]))
     tn = float(sum([v < threshold for k, v in anomalies.items() if true_labels[k] == 0]))
 
     tpr, tnr = tp / p, tn / n
     fpr, fnr = 1 - tnr, 1 - tpr
 
-    confusion_matrix = [[tpr, fpr], [fnr, tnr]]
+    matrix = [[tpr, fpr], [fnr, tnr]]
 
     plt.clf()
     fig = plt.figure()
     # noinspection PyUnresolvedReferences
-    plt.imshow(confusion_matrix, interpolation='nearest', cmap=plt.cm.Wistia)
+    plt.imshow(matrix, interpolation='nearest', cmap=plt.cm.Wistia)
     class_names = ['Normal', 'Anomaly']
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
@@ -113,7 +112,7 @@ def confusion_matrix(
     plt.yticks(tick_marks, class_names)
 
     s = [['TPR', 'FPR'], ['FNR', 'TNR']]
-    [plt.text(j, i, f'{s[i][j]} = {confusion_matrix[i][j]:.3f}', position=(-0.2 + j, 0.03 + i))
+    [plt.text(j, i, f'{s[i][j]} = {matrix[i][j]:.3f}', position=(-0.2 + j, 0.03 + i))
      for i in range(2)
      for j in range(2)]
 
@@ -148,33 +147,42 @@ def scatter(data: np.ndarray, labels: List[int], name: str):
     plt.close('all')
 
 
-def umap(
+def embed_umap(
         data: np.ndarray,
         n_neighbors: int,
         n_components: int,
         metric: str,
         filename: str,
 ) -> np.ndarray:
-    if os.path.exists(filename):
-        with open(filename, 'rb') as infile:
-            embedding = pickle.load(infile)
-    else:
-        embedding = umap.UMAP(
+    if not os.path.exists(filename):
+        embedding: np.ndarray = umap.UMAP(
             n_neighbors=n_neighbors,
             n_components=n_components,
             metric=metric,
         ).fit_transform(data)
 
-        with open(filename, 'wb') as outfile:
-            pickle.dump(embedding, outfile)
+        saver: np.memmap = np.memmap(
+            filename=filename,
+            dtype=np.float32,
+            mode='w+',
+            shape=(data.shape[0], n_components),
+        )
+        saver[:] = embedding[:]
+        del saver
 
-    return embedding
+    return np.memmap(
+        filename=filename,
+        dtype=np.float32,
+        mode='r',
+        shape=(data.shape[0], n_components),
+    )
 
 
 def plot_2d(
         data: np.ndarray,
         labels: np.ndarray,
         title: str,
+        filename: str,
         figsize=(8, 8),
         dpi=128,
 ):
@@ -184,7 +192,7 @@ def plot_2d(
     ax = fig.add_subplot(111)
     ax.scatter(x, y, c=[float(d) for d in labels], s=10. * labels + 1., cmap='Dark2')
     plt.title(title)
-    plt.show()
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0.25)
     plt.close('all')
     return
 
@@ -224,5 +232,5 @@ RESULT_PLOTS = {
 DATA_PLOTS = {
     'histogram': histogram,
     'scatter': scatter,
-    'umap': umap
+    'umap': embed_umap
 }

@@ -286,5 +286,6 @@ logs
 .venv
 plots
 build
+umaps
 embeddings
 normalized

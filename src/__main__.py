@@ -11,12 +11,12 @@ from sklearn.metrics import roc_auc_score
 
 from .datasets import DATASETS, get, read
 from .methods import METHODS
-from .plot import RESULT_PLOTS
+from .plot import RESULT_PLOTS, embed_umap, plot_2d, PLOT_DIR
 
 np.random.seed(42)
 random.seed(42)
 
-SUB_SAMPLE = 10_000
+SUB_SAMPLE = 100_000
 NORMALIZE = False
 
 METRICS = {
@@ -25,7 +25,9 @@ METRICS = {
     'manhattan': 'cityblock',
 }
 
+
 BUILD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
+UMAP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'umaps'))
 
 
 def _manifold_path(dataset, metric, min_points, graph_ratio) -> str:
@@ -74,14 +76,21 @@ def cli(ctx, dataset, metric):
 
 
 @cli.command()
-@click.option('--max-depth', type=int, default=100)
+@click.option('--dataset', type=click.Choice(DATASETS.keys()))
+@click.option('--metric', type=click.Choice(METRICS.keys()))
+@click.option('--max-depth', type=int, default=30)
 @click.option('--min-points', type=int, default=3)
 @click.option('--graph-ratio', type=int, default=100)
-@click.pass_obj
-def build(state, max_depth, min_points, graph_ratio):
-    # Pickup any values from state that were pre-populated
-    metrics = [state.metric] if state.metric else METRICS.keys()
-    for dataset in [state.dataset] if state.dataset else DATASETS.keys():
+def build(dataset, metric, max_depth, min_points, graph_ratio):
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s:%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s",
+        force=True,
+    )
+    datasets = [dataset] if dataset else DATASETS.keys()
+    metrics = [metric] if metric else METRICS.keys()
+
+    for dataset in datasets:
         get(dataset)
         data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
 
@@ -94,7 +103,7 @@ def build(state, max_depth, min_points, graph_ratio):
             ]))
             manifold = Manifold(data, METRICS[metric])
 
-            min_points = max(3, min_points) if data.shape[0] > 10_000 else 3
+            min_points = max(10, min_points) if data.shape[0] > 10_000 else 3
             filepath = _manifold_path(dataset, metric, min_points, graph_ratio)
             if os.path.exists(filepath):
                 with open(filepath, 'rb') as fp:
@@ -169,13 +178,21 @@ def plot_results(state, plot, method, starting_depth, min_points, graph_ratio):
     manifolds = [state.manifold] if state.manifold else glob(_manifold_path(state.datset or '*', state.metric or '*', min_points, graph_ratio))
     methods = [method] if method else METHODS.keys()
     plots = [plot] if plot else RESULT_PLOTS.keys()
-
-    for manifold in manifolds:
-        if not state.dataset:
-            meta = _meta_from_path(manifold)
-            dataset, metric = str(meta['dataset']), meta['metric']
-        else:
-            dataset, metric = state.dataset, state.metric
+    for manifold in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
+        meta = _meta_from_path(manifold)
+        dataset, metric = str(meta['dataset']), meta['metric']
+        if dataset not in DATASETS:
+            continue
+        log_file = os.path.join(PLOT_DIR, dataset)
+        os.makedirs(log_file, exist_ok=True)
+        log_file = os.path.join(log_file, 'roc_scores.log')
+        logging.basicConfig(
+            filename=log_file,
+            # filemode='w',
+            level=logging.INFO,
+            format="%(asctime)s:%(levelname)s:%(name)s:%(module)s.%(funcName)s:%(message)s",
+            force=True,
+        )
         data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
         
         if type(manifold) is str:
@@ -190,8 +207,7 @@ def plot_results(state, plot, method, starting_depth, min_points, graph_ratio):
                 if method in {'n_points_in_ball', 'k_nearest'} and depth < manifold.depth:
                     continue
                 for plot in plots:
-                    logging.info(f'{dataset}, {metric}, {depth}/{manifold.depth}, {method}, {plot}')
-                    RESULT_PLOTS[plot](
+                    auc = RESULT_PLOTS[plot](
                         labels,
                         METHODS[method](manifold.graphs[depth]),
                         dataset,
@@ -200,76 +216,46 @@ def plot_results(state, plot, method, starting_depth, min_points, graph_ratio):
                         depth,
                         save=True
                     )
+                    logging.info(f'{dataset}, {metric}, {depth}/{manifold.depth}, {method}, {plot}:-:{auc:.6f}')
+    return
 
 
 @cli.command()
-@click.pass_obj
-def svm(state):
-    from sklearn.svm import OneClassSVM
-    from sklearn.model_selection import train_test_split
-    from joblib import dump, load
-    import numpy as np
-
-    datasets = [state.dataset] if state.dataset else DATASETS.keys()
-    metrics = [state.metric] if state.metric else METRICS.keys()
-    
-    # Build.
+@click.option('--dataset', type=click.Choice(DATASETS.keys()))
+@click.option('--metric', type=click.Choice(METRICS.keys()))
+@click.option('--neighbors', type=int, default=8)
+@click.option('--components', type=click.Choice([2, 3]), default=3)
+def plot_data(dataset, metric, neighbors, components):
+    datasets = [dataset] if dataset else DATASETS.keys()
+    metrics = [metric] if metric else METRICS.keys()
     for dataset in datasets:
         get(dataset)
-        data, labels = read(dataset, normalize=False)
-        normal, anomalies = np.argwhere(labels == 0).flatten(), np.argwhere(labels == 1).flatten()
-        indices = np.concatenate([
-            np.random.choice(normal, size=len(anomalies) * 9), 
-            anomalies
-            ])
-        train, test = train_test_split(indices, stratify=labels[indices])
+        data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
         for metric in metrics:
-            filepath = os.path.join(BUILD_DIR, 'svm', ':'.join([dataset, metric]))
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            if os.path.exists(filepath):
-                logging.info(f'loading {filepath}')
-                model = load(filepath)
+            logging.info('; '.join([
+                f'dataset: {dataset}',
+                f'metric: {metric}',
+                f'shape: {data.shape}',
+            ]))
+            filename = f'{UMAP_DIR}/{dataset}/'
+            if not os.path.exists(filename):
+                os.makedirs(filename)
+                os.makedirs(filename + 'umaps/')
+            if data.shape[1] <= components:
+                embedding = data
             else:
-                logging.info(f'building {filepath}')
-                model = OneClassSVM()
-                model.fit(data[train], y=labels[train])
-                dump(model, filepath)
+                suffix = f'umap{components}d-{neighbors}-{metric}.pickle'
+                embedding = embed_umap(data, neighbors, components, metric, filename + 'umaps/' + suffix)
+            title = f'{dataset}-{metric}-{neighbors}_{components}'
+            if components == 3:
+                # folder = f'../data/{dataset}/frames/{metric}-'
+                # plot_3d(embedding, labels, title, folder)
 
-            # Test. 
-            logging.info(f'scoring {filepath}')
-            predicted = model.predict(data[test])
-            score = roc_auc_score(labels[test], predicted)
-            logging.info(':'.join(map(str, [dataset, metric, round(score, 2)])))
-            RESULT_PLOTS['roc_curve'](labels[test], {i: s for i, s in enumerate(np.clip(predicted, a_min=0, a_max=1))}, dataset, metric, 'SVM', 0, True)
-            
-
-@cli.command()
-def plot_data():
-    # TODO
-    raise NotImplementedError
-    for dataset in datasets:
-        normalize = dataset not in ['mnist']
-        data, labels = read(dataset, normalize)
-        min_points = 5 if data.shape[0] > 50_000 else 1
-        for metric in metrics:
-            for n_neighbors in [32]:
-                for n_components in [3]:
-                    filename = os.path.join(BUILD_DIR, dataset)
-                    filename = f'../data/{dataset}/umap/{n_neighbors}-{n_components}d-{metric}.pickle'
-                    if data.shape[1] > n_components:
-                        embedding = data
-                        # embedding = make_umap(data, n_neighbors, n_components, metric, filename)
-                    else:
-                        embedding = data
-                    title = f'{dataset}-{metric}-{n_neighbors}'
-                    if n_components == 3:
-                        # folder = f'../data/{dataset}/frames/{metric}-'
-                        # plot_3d(embedding, labels, title, folder)
-
-                        pass
-                    if n_components == 2:
-                        # plot_2d(embedding, labels, title)
-                        pass
+                pass
+            elif components == 2:
+                suffix = f'umap{components}d-{neighbors}-{metric}.png'
+                plot_2d(embedding, labels, title, filename + suffix)
+    return
 
 
 @cli.command()
