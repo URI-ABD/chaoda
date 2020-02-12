@@ -1,14 +1,14 @@
 \section{Methodology}
 \label{sec:methodology}
 
-For this work we have applied a multitude of different approaches for detecting anomalies/outliers.
-In this section, we detail the specific algorithms employed from these various categories.
+Given the manifold and induced graph learned by the CLAM approach described in Section~\ref{introduction:chaoda}, we have implemented five distinct algorithms for detecting anomalies or outliers, all of which take advantage of either the tree of hierarchical clusters or the graph learned from those clusters at a given depth.
+
 
 \subsection{Cluster Cardinality}
 
 For this method we equate anomalousness with the cardinality of the cluster to which a point belongs.
 If a point belongs to a cluster with a very small number of points, it is more likely that the point is an anomaly or an outlier.
-Clusters that have a large cardinality are treated to be more likely to be normal.
+Clusters that have a large cardinality are treated as more likely to be normal. Algorithm~\ref{alg-cc} details the cluster cardinality approach.
 
 \begin{algorithm}
 \DontPrintSemicolon
@@ -30,9 +30,9 @@ Clusters that have a large cardinality are treated to be more likely to be norma
 
 \subsection{Hierarchical}
 
-For this method, examine the ratio between the cardinality of a cluster and of it's parent.
-A point is considered to be more anomalous if it's parent cluster is large and it's cluster is small.
-Intuitively, this relationship would indicate that the point potentially sits off of the manifold.
+In this approach, we examine the ratio of the cardinality of a cluster and that of its parent cluster.
+For a given depth of the tree, a point is considered to be more anomalous if the cluster it belongs to at that depth is significantly smaller than the cluster it belongs to one level higher in the tree.
+This relationship tries to capture the intution that the point lives away from the manifold inhabited by most of the data. This approach is detailed in Algorithm~\ref{alg-hierarchical}.
 
 \begin{algorithm}
 \DontPrintSemicolon
@@ -55,8 +55,8 @@ Intuitively, this relationship would indicate that the point potentially sits of
 
 \subsection{k-Neighborhood}
 
-For this approach, we examine the number of clusters reachable within $k$-steps of a cluster.
-The more clusters which are reachable from a given cluster, the more likely it is to not contain anomalous points.
+For this approach, we rely on the graph learned by CLAM at a particular depth of the tree, as explained in Section~\ref{introduction:chaoda}. Given that graph, and a point in question, we consider the number of clusters reachable within a graph distance of $k$ from the point's cluster.
+The more clusters which are reachable from a given cluster, the \textit{less} likely it is to contain anomalous points. This approach is detailed in Algorithm~\ref{alg-kneighborhood}
 
 \begin{algorithm}
 \DontPrintSemicolon
@@ -80,9 +80,10 @@ The more clusters which are reachable from a given cluster, the more likely it i
 
 \subsection{Random Walk}
 
-The general idea behind this approach, which is derived from Outrank~\cite{moonesinghe_outrank:_2008}, is to examine the frequency with which clusters are visited during $n$ random walks.
+Here, we implement the Outrank~\cite{moonesinghe2008outrank} algorithm, with a key difference: since the graph learned by CLAM at a given depth of the tree may contain more than one connected component, some parts of the graph may be completely unreachable from a point in question.
+The general idea behind this approach is to examine the frequency with which clusters are visited during $n$ random walks.
 Clusters that are visited more frequently, are again less likely to be anomalous.
-Clusters that are not visited frequently are more likely to be disconnected, and distant from the underlying manifold.
+Clusters that are not visited frequently are more likely to be disconnected, and distant from the underlying manifold. This approach is detailed in Algorithm~\ref{alg-rw}, which assumes that $outrank(k)$ returns a hash table whose keys are the clusters of the graph, and whose values are the number of visits by a random walk to each cluster.
 
 \begin{algorithm}
 \DontPrintSemicolon
@@ -109,8 +110,8 @@ Clusters that are not visited frequently are more likely to be disconnected, and
 
 \subsection{Subgraph Cardinality}
 
-In this approach we utilize the cardinality of each connected subcomponent of the graph at various depths to determine anomalousness.
-Similarly to some of our other approaches, we postulate that clusters which are members of sparse components are themselves more likely to be anomalous.
+This approach is similar to Cluster Cardinality. Here,  we utilize the cardinality of each connected component of the graph at various depths to determine anomalousness.
+Similarly to some of our other approaches, we postulate that clusters which are members of sparse components are themselves more likely to be anomalous. Algorithm~\ref{alg-sgc} details this approach.
 
 \begin{algorithm}
 \DontPrintSemicolon

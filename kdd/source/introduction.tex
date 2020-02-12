@@ -23,44 +23,44 @@ For example, for any given point, one could estimate it's anomalousness by it's 
 To determine if a cluster contains outliers, one could examine the relative cardinality of the cluster.
 
 We summarize several major approaches to clustering data.
-Note that there have been relatively few advancements in clustering techniques over the past decade~\cite{wang_progress_2019}. This may explain, or by attributable to, the observably poor performance, thus far, of clustering data in higher dimensional space~\cite{zhang_advancements_2013}.
+Note that there have been relatively few advancements in clustering techniques over the past decade~\cite{wang2019progress}. This may explain, or by attributable to, the observably poor performance, thus far, of clustering data in higher dimensional space~\cite{zhang2013advancements}.
 
 Distance-based clustering approaches rely on some distance measure to partition the data into some number of clusters.
-Within this approach, the numbers of clusters and/or the sizes of clusters are normally predefined: either user-specified, or chosen at random~\cite{wang_progress_2019}.
+Within this approach, the numbers of clusters and/or the sizes of clusters are normally predefined: either user-specified, or chosen at random~\cite{wang2019progress}.
 Some examples of distance-based clustering are:
 K-Means~\cite{macqueen1967some}, 
 PAM~\cite{kaufman2009finding}, 
 CLARANS~\cite{ng1994efficient} and
 CLARA~\cite{kaufman2009finding}.
 
-Hierarchical clustering methods typically utilize a tree-like structure, where points are allocated into leaf nodes~\cite{wang_progress_2019}.
-These tree-like structures can be created bottom-up (agglomerative clustering), or top-down (divisive clustering)~\cite{rakesh_agrawal_automatic_1998}.
+Hierarchical clustering methods typically utilize a tree-like structure, where points are allocated into leaf nodes~\cite{wang2019progress}.
+These tree-like structures can be created bottom-up (agglomerative clustering), or top-down (divisive clustering)~\cite{agrawal1998automatic}.
 The major drawback of these methods is the high cost of pairwise difference computations at each level of the tree.
 Examples of hierarchical clustering include 
 MST~\cite{charles_zahn_graph_1971}, 
 CURE~\cite{guha1998cure} and
-CHAMELEON~\cite{karypis_chameleon:_nodate}.
+CHAMELEON~\cite{karypis1999hierarchical}.
 
 Density-Based clustering methods rely on finding areas of high point-density separated by areas of low point-density.
 These algorithms generally do not work well when normal data are sparse or uniformly distributed.
 Some examples of density-based clustering algorithms are
-DBSCAN~\cite{ester_density-based_nodate} and
-DENCLUE~\cite{Hinneburg1998Effic-5816}.
+DBSCAN~\cite{ester1996density} and
+DENCLUE~\cite{hinneburg1998efficient}.
 
 Grid-based clustering works via segmenting the entire space into a finite number of cells and then iterating over the cells to find regions of higher density.
 Utilizing the grid structure for clustering means that these algorithms have typically scaled better to larger datasets.
 Some examples of grid-based clustering include
-STING~\cite{sting:wang}, 
-Wavecluster~\cite{Wavecluster:Sheikholeslami:2000}, and
-CLIQUE~\cite{rakesh_agrawal_automatic_1998}.
+STING~\cite{wang1997sting}, 
+Wavecluster~\cite{sheikholeslami2000wavecluster}, and
+CLIQUE~\cite{agrawal1998automatic}.
 
 \subsection{Distanced-Based Approaches}
 
 Distance-based methods attempt to find anomalous points via distance comparisons.
-These methods largely employ k-Nearest Neighbors as their substrate~\cite{wang_progress_2019}.
+These methods largely employ k-Nearest Neighbors as their substrate~\cite{wang2019progress}.
 Each method uses one of the following approaches: points with fewer than $p$ other points within some distance $d$ are outliers; the $n$ points with the greatest distances to their $k^{th}-$nearest neighbor are outliers; or the $n$ points with the greatest average distance to their $k$ nearest neighbors are outliers.
 
-\subsection{CHAODA}
+\subsection{CHAODA}\label{introduction:chaoda}
 
 In this paper we introduce a novel technique, Clustered Learning of Approximate Manifolds (CLAM).
 This approach uses a divisive hierarchical clustering approach to learn a manifold in a Banach space~\cite{banach1929fonctionnelles} defined by a distance metric.
@@ -82,5 +82,5 @@ Each dataset contains a different number of anomalous data, for a different doma
 We consider several different definitions for outliers and anomalies: \textbf{distance-based}, examining several classical distance-based definitions of outliers, relying on CLAM's use of distance to cluster data; \textbf{density-based}, examining the cardinality of clusters, under the hypothesis that clusters with lower cardinality are more likely to contain outliers; \textbf{graph-based}, examining several graph-theoretic methods for anomaly detection, given graphs constructed from layers of clusters.
 
 Historically, clustering approaches have suffered from one several problems.
-The most common deficiencies are: the effective treatment of high dimensionality, the ability to interpret results, and the ability to scale to exponentially-growing datasets ~\cite{rakesh_agrawal_automatic_1998}.
+The most common deficiencies are: the effective treatment of high dimensionality, the ability to interpret results, and the ability to scale to exponentially-growing datasets ~\cite{agrawal1998automatic}.
 With CLAM, we have largely alleviated these problems.
