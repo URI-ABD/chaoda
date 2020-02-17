@@ -19,8 +19,8 @@ DATASETS: Dict = {
     'thyroid': 'https://www.dropbox.com/s/bih0e15a0fukftb/thyroid.mat?dl=0',
     'musk': 'https://www.dropbox.com/s/we6aqhb0m38i60t/musk.mat?dl=0',
     'satimage-2': 'https://www.dropbox.com/s/hckgvu9m6fs441p/satimage-2.mat?dl=0',
-    'letter': 'https://www.dropbox.com/s/rt9i95h9jywrtiy/letter.mat?dl=0',
-    'speech': 'https://www.dropbox.com/s/w6xv51ctea6uauc/speech.mat?dl=0',
+    # 'letter': 'https://www.dropbox.com/s/rt9i95h9jywrtiy/letter.mat?dl=0',
+    # 'speech': 'https://www.dropbox.com/s/w6xv51ctea6uauc/speech.mat?dl=0',
     'pima': 'https://www.dropbox.com/s/mvlwu7p0nyk2a2r/pima.mat?dl=0',
     'satellite': 'https://www.dropbox.com/s/dpzxp8jyr9h93k5/satellite.mat?dl=0',
     'shuttle': 'https://www.dropbox.com/s/mk8ozgisimfn3dw/shuttle.mat?dl=0',
@@ -93,6 +93,7 @@ def read(dataset: str, normalize: bool = True, subsample: int = None):
     labels = np.asarray(data_dict['y'], dtype=np.int8)
 
     if subsample and subsample < data.shape[0]:
+        np.random.seed(42)
         negatives: List[int] = list(map(int, np.argwhere(labels < 0.9).flatten()))
 
         samples: List[int] = list(map(int, np.argwhere(labels > 0.9).flatten()))

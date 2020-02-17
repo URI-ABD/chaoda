@@ -18,7 +18,7 @@ from .plot import RESULT_PLOTS, embed_umap, plot_2d, PLOT_DIR
 np.random.seed(42)
 random.seed(42)
 
-SUB_SAMPLE = 100_000
+SUB_SAMPLE = 10_000
 NORMALIZE = False
 
 METRICS = {
@@ -220,7 +220,7 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
 @click.option('--dataset', type=click.Choice(DATASETS.keys()))
 @click.option('--metric', type=click.Choice(METRICS.keys()))
 @click.option('--neighbors', type=int, default=8)
-@click.option('--components', type=click.Choice([2, 3]), default=3)
+@click.option('--components', type=click.Choice([2, 3]), default=2)
 def plot_data(dataset, metric, neighbors, components):
     datasets = [dataset] if dataset else DATASETS.keys()
     metrics = [metric] if metric else METRICS.keys()
@@ -233,23 +233,24 @@ def plot_data(dataset, metric, neighbors, components):
                 f'metric: {metric}',
                 f'shape: {data.shape}',
             ]))
-            filename = f'{UMAP_DIR}/{dataset}/'
+            filename = f'{UMAP_DIR}/'
             if not os.path.exists(filename):
                 os.makedirs(filename)
-                os.makedirs(filename + 'umaps/')
+                os.makedirs(filename + 'pickles/')
+
             if data.shape[1] <= components:
                 embedding = data
             else:
-                suffix = f'umap{components}d-{neighbors}-{metric}.pickle'
-                embedding = embed_umap(data, neighbors, components, metric, filename + 'umaps/' + suffix)
-            title = f'{dataset}-{metric}-{neighbors}_{components}'
+                suffix = f'pickles/{dataset}-{metric}-umap{components}d.pickle'
+                embedding = embed_umap(data, neighbors, components, metric, filename + suffix)
+            title = f'{dataset}-{metric}'
             if components == 3:
                 # folder = f'../data/{dataset}/frames/{metric}-'
                 # plot_3d(embedding, labels, title, folder)
 
                 pass
             elif components == 2:
-                suffix = f'umap{components}d-{neighbors}-{metric}.png'
+                suffix = f'{dataset}-{metric}-umap{components}d.png'
                 plot_2d(embedding, labels, title, filename + suffix)
     return
 
