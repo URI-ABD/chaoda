@@ -92,11 +92,6 @@ def outrank_anomalies(graph: Graph) -> Dict[int, float]:
     return {k: 1. - v for k, v in anomalies.items()}
 
 
-"""         , cosine , euclidean , manhattan
-glass,      ,  81.2  ,   92.0    ,   93.7
-"""
-
-
 def k_neighborhood_anomalies(graph: Graph, k: int = 10) -> Dict[int, float]:
     """ Determines anomalies by the considering the graph-neighborhood of clusters.
 

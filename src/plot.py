@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List
+from typing import List
 
 import numpy as np
 import umap
@@ -33,7 +33,6 @@ def histogram(
     plt.ylim(ymax=np.ceil(max_freq / 10) * 10 if max_freq % 10 else max_freq + 10)
     if save is True:
         filepath = f'../data/{dataset}/plots/{metric}/{method}/{depth}-histogram.png'
-        # make_folders(dataset, metric, method)
         fig.savefig(filepath)
     else:
         plt.show()
@@ -43,7 +42,6 @@ def histogram(
 def roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
     y_true, y_score = [], []
     [(y_true.append(true_labels[k]), y_score.append(v)) for k, v in anomalies.items()]
-    print(sum(y_true))
     fpr, tpr, _ = metrics.roc_curve(y_true, y_score)
     auc = metrics.auc(fpr, tpr)
 
@@ -78,54 +76,6 @@ def roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
     return auc
 
 
-def confusion_matrix(
-        true_labels: List[bool],
-        anomalies: Dict[int, float],
-        dataset: str,
-        metric: str,
-        method: str,
-        depth: int,
-        save: bool,
-):
-    p = float(len([k for k in anomalies.keys() if true_labels[k] == 1]))
-    n = float(len([k for k in anomalies.keys() if true_labels[k] == 0]))
-
-    threshold = float(np.percentile(list(anomalies.values()), 95))
-    # values = [float(v) for v in anomalies.values()]
-    tp = float(sum([v > threshold for k, v in anomalies.items() if true_labels[k] == 1]))
-    tn = float(sum([v < threshold for k, v in anomalies.items() if true_labels[k] == 0]))
-
-    tpr, tnr = tp / p, tn / n
-    fpr, fnr = 1 - tnr, 1 - tpr
-
-    matrix = [[tpr, fpr], [fnr, tnr]]
-
-    plt.clf()
-    fig = plt.figure()
-    # noinspection PyUnresolvedReferences
-    plt.imshow(matrix, interpolation='nearest', cmap=plt.cm.Wistia)
-    class_names = ['Normal', 'Anomaly']
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    tick_marks = np.arange(len(class_names))
-    plt.xticks(tick_marks, class_names)
-    plt.yticks(tick_marks, class_names)
-
-    s = [['TPR', 'FPR'], ['FNR', 'TNR']]
-    [plt.text(j, i, f'{s[i][j]} = {matrix[i][j]:.3f}', position=(-0.2 + j, 0.03 + i))
-     for i in range(2)
-     for j in range(2)]
-
-    directory = _directory(dataset, metric, method)
-    os.makedirs(directory, exist_ok=True)
-    if save is True:
-        filepath = os.path.join(directory, f'{depth}-confusion_matrix.png')
-        fig.savefig(filepath)
-    else:
-        plt.show()
-    plt.close('all')
-
-
 def scatter(data: np.ndarray, labels: List[int], name: str):
     plt.clf()
     fig = plt.figure(figsize=(6, 6), dpi=300)
@@ -145,6 +95,7 @@ def scatter(data: np.ndarray, labels: List[int], name: str):
     plt.savefig(name, bbox_inches='tight', pad_inches=0.25)
     plt.show()
     plt.close('all')
+    return
 
 
 def embed_umap(

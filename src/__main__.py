@@ -18,8 +18,8 @@ from .plot import RESULT_PLOTS, embed_umap, plot_2d, PLOT_DIR
 np.random.seed(42)
 random.seed(42)
 
-SUB_SAMPLE = 10_000
 NORMALIZE = False
+SUB_SAMPLE = 10_000
 
 METRICS = {
     'cosine': 'cosine',
@@ -255,6 +255,7 @@ def plot_data(dataset, metric, neighbors, components):
     return
 
 
+# noinspection PyUnreachableCode,PyUnusedLocal
 @cli.command()
 @click.option('--dataset', type=str, default='*')
 @click.option('--metric', type=str, default='*')
