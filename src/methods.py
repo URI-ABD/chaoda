@@ -63,7 +63,7 @@ def hierarchical_anomalies(graph: Graph) -> Dict[int, float]:
             parent = manifold.select(cluster.name[:-1])
             f = float(parent.cardinality) / (cluster.cardinality * np.sqrt(cluster.depth))
             [results[p].append(f) for p in cluster.argpoints]
-            
+
     results = {k: sum(v) for k, v in results.items()}
     return normalize(results)
 
@@ -76,20 +76,22 @@ def outrank_anomalies(graph: Graph) -> Dict[int, float]:
     """
     # 0th: 13, 75 sec
     manifold = graph.manifold
-    depth = int(np.argmax([g.cardinality - len(g.subgraphs) for g in manifold.graphs]))
+    depth = int(np.argmax([g.cardinality / np.sqrt(len(g.subgraphs)) for g in manifold.graphs]))
     graph = manifold.graphs[depth]
     print(f'depth: {depth}, clusters: {graph.cardinality}, components: {len(graph.subgraphs)}')
     scores: Dict[Cluster, float] = dict()
-    num_samples, steps = 500, 1000
+    num_samples = 500
     if graph.cardinality < num_samples:
         sample_clusters = list(graph.clusters)
     else:
         sample_clusters = list(np.random.choice(list(graph.clusters), num_samples, False))
+    steps = 1000 * graph.population // len(sample_clusters)
+    print(len(sample_clusters), steps)
     results: Dict[Cluster, int] = graph.random_walks(
         clusters=sample_clusters,
         steps=min(graph.cardinality * 5, steps),
     ) if graph.cardinality > 1 else {c: 1. for c in graph.clusters}
-    scores.update({c: float(v * np.sqrt(1 + c.depth)) for c, v in results.items()})
+    scores.update({c: float(v * np.sqrt(1 + min(c.depth, depth))) for c, v in results.items()})
 
     anomalies: Dict[int, float] = {p: 0 for c in scores for p in c.argpoints}
     for cluster, v in scores.items():
