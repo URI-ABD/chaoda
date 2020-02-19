@@ -143,7 +143,7 @@ def build(dataset, metric, max_depth, min_points, graph_ratio):
             ]))
             manifold = Manifold(data, METRICS[metric])
 
-            min_points = max(10, min_points) if data.shape[0] > 10_000 else 3
+            # min_points = max(10, min_points) if data.shape[0] > 10_000 else 3
             filepath = _manifold_path(dataset, metric, min_points, graph_ratio)
             if os.path.exists(filepath):
                 with open(filepath, 'rb') as fp:
@@ -165,6 +165,43 @@ def build(dataset, metric, max_depth, min_points, graph_ratio):
                 with open(filepath, 'wb') as fp:
                     logging.info(f'dumping manifold {filepath}')
                     manifold.dump(fp)
+    return
+
+
+@cli.command()
+@click.option('--dataset', type=str, default='*')
+@click.option('--metric', type=str, default='*')
+@click.option('--min-points', type=str, default='*')
+@click.option('--graph-ratio', type=str, default='*')
+def inspect(dataset, metric, min_points, graph_ratio):
+    percentiles = [0, 40, 50, 60, 100]
+    for manifold in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
+        meta = _meta_from_path(manifold)
+        dataset, metric = str(meta['dataset']), meta['metric']
+        if dataset not in DATASETS or metric not in METRICS:
+            continue
+        data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
+        with open(manifold, 'rb') as fp:
+            logging.info(f'loading manifold {manifold}')
+            manifold = Manifold.load(fp, data)
+        lfd_range = [], []
+        for graph in manifold.graphs:
+            clusters = [cluster.local_fractal_dimension
+                        for cluster in graph.clusters
+                        if cluster.cardinality > 2]
+            if len(clusters) > 0:
+                lfds = np.percentile(
+                    a=clusters,
+                    q=percentiles,
+                )
+                lfd_range[0].append(lfds[1]), lfd_range[1].append(lfds[3])
+                lfds = [f'{d:.3f}' for d in lfds]
+                print(f'depth: {graph.depth:2d}, '
+                      f'clusters: {graph.cardinality:5d}, '
+                      f'non-singletons: {len(clusters):5d}, '
+                      f'lfds:  {"  ".join(lfds)}')
+        lfd_range = float(np.median(lfd_range[0])), float(np.median(lfd_range[1]))
+        print(f'medians: {lfd_range[0]:.3f}, {lfd_range[1]:.3f}')
     return
 
 
