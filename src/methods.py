@@ -74,20 +74,27 @@ def outrank_anomalies(graph: Graph) -> Dict[int, float]:
     :param graph: manifold in which to find anomalies.
     :return: Dictionary of indexes in the data with the confidence (in the range 0. to 1.) that the point is an anomaly.
     """
-    subgraphs: Set[Graph] = graph.subgraphs
+    # 0th: 13, 75 sec
+    manifold = graph.manifold
+    depth = int(np.argmax([g.cardinality - len(g.subgraphs) for g in manifold.graphs]))
+    graph = manifold.graphs[depth]
+    print(f'depth: {depth}, clusters: {graph.cardinality}, components: {len(graph.subgraphs)}')
     scores: Dict[Cluster, float] = dict()
-    for subgraph in subgraphs:
-        if subgraph.cardinality < 100:
-            sample_clusters = list(subgraph.clusters)
-        else:
-            sample_clusters = list(np.random.choice(list(subgraph.clusters), 100, False))
-        results: Dict[Cluster, int] = subgraph.random_walks(
-            clusters=sample_clusters,
-            steps=min(subgraph.cardinality, 100),
-        ) if subgraph.cardinality > 1 else {c: 1. for c in subgraph.clusters}
-        multiplier = np.sqrt(subgraph.population)
-        scores.update({c: float(v * multiplier) for c, v in results.items()})
-    anomalies: Dict[int, float] = {p: v for c, v in scores.items() for p in c.argpoints}
+    num_samples, steps = 500, 1000
+    if graph.cardinality < num_samples:
+        sample_clusters = list(graph.clusters)
+    else:
+        sample_clusters = list(np.random.choice(list(graph.clusters), num_samples, False))
+    results: Dict[Cluster, int] = graph.random_walks(
+        clusters=sample_clusters,
+        steps=min(graph.cardinality * 5, steps),
+    ) if graph.cardinality > 1 else {c: 1. for c in graph.clusters}
+    scores.update({c: float(v * np.sqrt(1 + c.depth)) for c, v in results.items()})
+
+    anomalies: Dict[int, float] = {p: 0 for c in scores for p in c.argpoints}
+    for cluster, v in scores.items():
+        for p in cluster.argpoints:
+            anomalies[p] += v
     anomalies = normalize(anomalies)
     return {k: 1. - v for k, v in anomalies.items()}
 

@@ -200,7 +200,7 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
             manifold = Manifold.load(fp, data)
         for method in methods:
             for depth in range(starting_depth, manifold.depth + 1):
-                if method in {'n_points_in_ball', 'k_nearest'} and depth < manifold.depth:
+                if method in {'n_points_in_ball', 'k_nearest', 'random_walk'} and depth < manifold.depth:
                     continue
                 for plot in plots:
                     auc = RESULT_PLOTS[plot](
