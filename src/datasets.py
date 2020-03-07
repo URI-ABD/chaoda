@@ -10,6 +10,11 @@ from scipy.io.matlab.miobase import MatReadError
 
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
 
+METRICS = {
+    'cosine': 'cosine',
+    'euclidean': 'euclidean',
+    'manhattan': 'cityblock',
+}
 DATASETS: Dict = {
     'lympho': 'https://www.dropbox.com/s/ag469ssk0lmctco/lympho.mat?dl=0',
     'wbc': 'https://www.dropbox.com/s/ebz9v9kdnvykzcb/wbc.mat?dl=0',

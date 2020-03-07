@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Dict, Set
+from typing import Dict
 
 import numpy as np
 from pyclam.manifold import Graph, Cluster
@@ -69,7 +69,7 @@ def hierarchical_anomalies(graph: Graph) -> Dict[int, float]:
 
 
 def outrank_anomalies(graph: Graph) -> Dict[int, float]:
-    """ Determines anomalies by the Outrank algorithm.
+    """ Determines anomalies by the Outrank-Algorithm.
 
     :param graph: manifold in which to find anomalies.
     :return: Dictionary of indexes in the data with the confidence (in the range 0. to 1.) that the point is an anomaly.
