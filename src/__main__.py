@@ -7,11 +7,8 @@ import click
 import numpy as np
 from pyclam import criterion
 from pyclam.manifold import Manifold
-from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import train_test_split
-from sklearn.svm import OneClassSVM
 
-from .datasets import DATASETS, get, read
+from .datasets import DATASETS, METRICS, get, read
 from .methods import METHODS
 from .plot import RESULT_PLOTS, embed_umap, plot_2d, PLOT_DIR
 
@@ -21,21 +18,15 @@ random.seed(42)
 NORMALIZE = False
 SUB_SAMPLE = 10_000
 
-METRICS = {
-    'cosine': 'cosine',
-    'euclidean': 'euclidean',
-    'manhattan': 'cityblock',
-}
-
 BUILD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
-UMAP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'umaps'))
+UMAP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plots', 'umaps'))
 
 
-def _manifold_path(dataset, metric, min_points, graph_ratio) -> str:
+def _manifold_path(dataset, metric, min_points) -> str:
     """ Generate proper path to manifold. """
     return os.path.join(
         BUILD_DIR,
-        ':'.join(map(str, [dataset, metric, min_points, f'{graph_ratio}.pickle']))
+        ':'.join(map(str, [dataset, metric, f'{min_points}.pickle']))
     )
 
 
@@ -59,7 +50,7 @@ def _meta_from_path(path):
 
 
 class State:
-    """ This gets passed between chained commands. """
+    """ State is passed between chained commands. """
 
     def __init__(self, dataset=None, metric=None, manifold=None):
         self.dataset = dataset
@@ -79,48 +70,11 @@ def cli(ctx, dataset, metric):
 
 
 @cli.command()
-@click.pass_obj
-def svm(state):
-    datasets = [state.dataset] if state.dataset else DATASETS.keys()
-
-    # Build.
-    for dataset in datasets:
-        np.random.seed(42)
-        get(dataset)
-        data, labels = read(dataset, normalize=False)
-        labels = np.squeeze(labels)
-        normal, anomalies = np.argwhere(labels == 0).flatten(), np.argwhere(labels == 1).flatten()
-        if anomalies.shape[0] > 500:
-            anomalies = np.random.choice(anomalies, 500, replace=False)
-        size = min(anomalies.shape[0] * 18, normal.shape[0])
-        indices = np.concatenate([
-            np.random.choice(normal, size=size, replace=False),
-            anomalies
-        ])
-        train, test = train_test_split(indices, stratify=labels[indices])
-        filepath = os.path.join(BUILD_DIR, 'svm', ':'.join([dataset]))
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        model = OneClassSVM()
-        model.fit(data[train], y=labels[train])
-
-        # Test.
-        predicted = model.predict(data[test])
-        predicted = np.clip(predicted, a_min=0, a_max=1)
-        predicted = [1 - p for p in predicted]
-        score = roc_auc_score(labels[test], predicted)
-        RESULT_PLOTS['roc_curve'](labels[test], {i: s for i, s in enumerate(np.clip(predicted, a_min=0, a_max=1))},
-                                  dataset, '', 'SVM', 0, True)
-        print(f'{dataset}: {score:.6f},')
-    return
-
-
-@cli.command()
 @click.option('--dataset', type=click.Choice(DATASETS.keys()))
 @click.option('--metric', type=click.Choice(METRICS.keys()))
 @click.option('--max-depth', type=int, default=50)
-@click.option('--min-points', type=int, default=1)
-@click.option('--graph-ratio', type=int, default=100)
-def build(dataset, metric, max_depth, min_points, graph_ratio):
+@click.option('--min-points', type=int, default=0)
+def build(dataset, metric, max_depth, min_points):
     # noinspection PyArgumentList
     logging.basicConfig(
         level=logging.INFO,
@@ -143,8 +97,8 @@ def build(dataset, metric, max_depth, min_points, graph_ratio):
             ]))
             manifold = Manifold(data, METRICS[metric])
 
-            # min_points = max(10, min_points) if data.shape[0] > 10_000 else 3
-            filepath = _manifold_path(dataset, metric, min_points, graph_ratio)
+            min_points = min_points if min_points else min(1 + data.shape[0] // 1000, 25)
+            filepath = _manifold_path(dataset, metric, min_points)
             if os.path.exists(filepath):
                 with open(filepath, 'rb') as fp:
                     logging.info(f'loading manifold {filepath}')
@@ -172,10 +126,9 @@ def build(dataset, metric, max_depth, min_points, graph_ratio):
 @click.option('--dataset', type=str, default='*')
 @click.option('--metric', type=str, default='*')
 @click.option('--min-points', type=str, default='*')
-@click.option('--graph-ratio', type=str, default='*')
-def inspect(dataset, metric, min_points, graph_ratio):
+def inspect(dataset, metric, min_points):
     percentiles = [0, 40, 50, 60, 100]
-    for manifold in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
+    for manifold in glob(_manifold_path(dataset, metric, min_points)):
         meta = _meta_from_path(manifold)
         dataset, metric = str(meta['dataset']), meta['metric']
         if dataset not in DATASETS or metric not in METRICS:
@@ -212,11 +165,10 @@ def inspect(dataset, metric, min_points, graph_ratio):
 @click.option('--metric', type=str, default='*')
 @click.option('--starting-depth', type=int, default=0)
 @click.option('--min-points', type=str, default='*')
-@click.option('--graph-ratio', type=str, default='*')
-def plot_results(plot, method, dataset, metric, starting_depth, min_points, graph_ratio):
+def plot_results(plot, method, dataset, metric, starting_depth, min_points):
     methods = [method] if method else METHODS.keys()
     plots = [plot] if plot else RESULT_PLOTS.keys()
-    for manifold in glob(_manifold_path(dataset, metric, min_points, graph_ratio)):
+    for manifold in glob(_manifold_path(dataset, metric, min_points)):
         meta = _meta_from_path(manifold)
         dataset, metric = str(meta['dataset']), meta['metric']
         if dataset not in DATASETS:
@@ -259,6 +211,7 @@ def plot_results(plot, method, dataset, metric, starting_depth, min_points, grap
 @click.option('--neighbors', type=int, default=8)
 @click.option('--components', type=click.Choice([2, 3]), default=2)
 def plot_data(dataset, metric, neighbors, components):
+    # TODO: Fix
     datasets = [dataset] if dataset else DATASETS.keys()
     metrics = [metric] if metric else METRICS.keys()
     for dataset in datasets:
@@ -271,18 +224,16 @@ def plot_data(dataset, metric, neighbors, components):
                 f'shape: {data.shape}',
             ]))
             filename = f'{UMAP_DIR}/'
-            if not os.path.exists(filename):
-                os.makedirs(filename)
-                os.makedirs(filename + 'pickles/')
+            os.makedirs(filename, exist_ok=True)
 
             if data.shape[1] <= components:
                 embedding = data
             else:
-                suffix = f'pickles/{dataset}-{metric}-umap{components}d.pickle'
+                suffix = f'{dataset}-{metric}-umap{components}d.pickle'
                 embedding = embed_umap(data, neighbors, components, metric, filename + suffix)
             title = f'{dataset}-{metric}'
             if components == 3:
-                # folder = f'../data/{dataset}/frames/{metric}-'
+                # folder = f'data/{dataset}/frames/{metric}-'
                 # plot_3d(embedding, labels, title, folder)
 
                 pass
@@ -309,6 +260,7 @@ def animate(dataset, metric):
         '-pix_fmt', 'yuv420p',
         os.path.join(dataset, f'{metric}-30fps.mp4'),
     ])
+    return
 
 
 if __name__ == "__main__":
