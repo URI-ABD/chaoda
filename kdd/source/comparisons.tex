@@ -1,0 +1,458 @@
+\section{Comparisons}
+\label{sec:comparisons}
+
+\begin{table*}[!t]
+\caption{Depth vs AUC table}
+\label{comparisons:vowels}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\bfseries Depth & \multicolumn{4}{c|}{\textbf{L1}} & \multicolumn{4}{c|}{\textbf{L2}} & \multicolumn{4}{c|}{\textbf{COS}} \\
+\hline
+\bfseries  & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC \\
+\hline
+\bfseries 1 & 0.510 & 0.500 & 0.500 & 0.500 & 0.405 & 0.500 & 0.500 & 0.500 & 0.646 & 0.500 & 0.500 & 0.500 \\
+\hline\bfseries 2 & 0.514 & 0.510 & 0.500 & 0.500 & 0.506 & 0.405 & 0.500 & 0.500 & 0.626 & 0.646 & 0.500 & 0.500 \\
+\hline\bfseries 3 & 0.735 & 0.514 & 0.500 & 0.500 & 0.601 & 0.437 & 0.500 & 0.500 & 0.782 & 0.626 & 0.500 & 0.500 \\
+\hline\bfseries 4 & 0.782 & 0.728 & 0.500 & 0.500 & 0.642 & 0.593 & 0.500 & 0.500 & 0.805 & 0.727 & 0.500 & 0.500 \\
+\hline\bfseries 5 & 0.822 & 0.778 & 0.500 & 0.500 & 0.690 & 0.639 & 0.500 & 0.500 & 0.878 & 0.764 & 0.510 & 0.500 \\
+\hline\bfseries 6 & 0.879 & 0.812 & 0.534 & 0.499 & 0.680 & 0.651 & 0.520 & 0.500 & 0.887 & 0.860 & 0.556 & 0.500 \\
+\hline\bfseries 7 & 0.903 & 0.862 & 0.559 & 0.550 & 0.767 & 0.653 & 0.499 & 0.499 & 0.897 & 0.855 & 0.545 & 0.499 \\
+\hline\bfseries 8 & 0.922 & 0.871 & 0.646 & 0.638 & 0.785 & 0.706 & 0.513 & 0.515 & 0.892 & 0.876 & 0.675 & 0.554 \\
+\hline\bfseries 9 & 0.927 & 0.885 & 0.698 & 0.702 & 0.806 & 0.745 & 0.615 & 0.618 & 0.871 & 0.873 & 0.641 & 0.628 \\
+\hline\bfseries 10 & 0.890 & 0.893 & 0.928 & 0.911 & 0.809 & 0.782 & 0.688 & 0.679 & 0.849 & 0.865 & 0.844 & 0.902 \\
+\hline\bfseries 11 & 0.825 & 0.884 & 0.902 & 0.903 & 0.782 & 0.798 & 0.845 & 0.850 & 0.776 & 0.863 & 0.778 & 0.838 \\
+\hline\bfseries 12 & 0.731 & 0.878 & 0.829 & 0.834 & 0.719 & 0.803 & 0.838 & 0.845 & 0.701 & 0.851 & 0.698 & 0.759 \\
+\hline\bfseries 13 & 0.636 & 0.874 & 0.750 & 0.763 & 0.633 & 0.793 & 0.769 & 0.774 & 0.622 & 0.841 & 0.633 & 0.707 \\
+\hline\bfseries 14 & 0.561 & 0.873 & 0.687 & 0.699 & 0.555 & 0.783 & 0.670 & 0.680 & 0.554 & 0.837 & 0.549 & 0.593 \\
+\hline\bfseries 15 & 0.503 & 0.873 & 0.609 & 0.618 & 0.503 & 0.778 & 0.617 & 0.621 & 0.493 & 0.835 & 0.522 & 0.539 \\
+\hline\bfseries 16 & 0.459 & 0.873 & 0.547 & 0.557 & 0.458 & 0.776 & 0.557 & 0.559 & 0.438 & 0.835 & 0.501 & 0.501 \\
+\hline\bfseries 17 & 0.436 & 0.873 & 0.526 & 0.528 & 0.430 & 0.776 & 0.513 & 0.514 & 0.424 & 0.835 & 0.500 & 0.500 \\
+\hline\bfseries 18 & 0.427 & 0.873 & 0.506 & 0.506 & 0.423 & 0.776 & 0.504 & 0.504 & 0.420 & 0.835 & 0.500 & 0.500 \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+\caption{Depth vs AUC table}
+\label{comparisons:cardio}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\bfseries Depth & \multicolumn{4}{c|}{\textbf{L1}} & \multicolumn{4}{c|}{\textbf{L2}} & \multicolumn{4}{c|}{\textbf{COS}} \\
+\hline
+\bfseries  & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC \\
+\hline
+\bfseries 1 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 2 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 3 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 4 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 5 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 6 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 7 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 8 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 9 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 10 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 11 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 12 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 13 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 14 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 15 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 16 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 17 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 18 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 19 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 20 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+\caption{Depth vs AUC table}
+\label{comparisons:thyroid}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\bfseries Depth & \multicolumn{4}{c|}{\textbf{L1}} & \multicolumn{4}{c|}{\textbf{L2}} & \multicolumn{4}{c|}{\textbf{COS}} \\
+\hline
+\bfseries  & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC \\
+\hline
+\bfseries 1 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 2 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 3 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 4 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 5 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 6 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 7 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 8 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 9 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 10 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 11 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 12 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 13 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 14 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 15 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 16 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 17 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 18 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 19 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 20 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+\caption{Depth vs AUC table}
+\label{comparisons:musk}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\bfseries Depth & \multicolumn{4}{c|}{\textbf{L1}} & \multicolumn{4}{c|}{\textbf{L2}} & \multicolumn{4}{c|}{\textbf{COS}} \\
+\hline
+\bfseries  & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC \\
+\hline
+\bfseries 1 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 2 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 3 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 4 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 5 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 6 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 7 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 8 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 9 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 10 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 11 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 12 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 13 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 14 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 15 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 16 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 17 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 18 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 19 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 20 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+\caption{Depth vs AUC table}
+\label{comparisons:satimage-2}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\bfseries Depth & \multicolumn{4}{c|}{\textbf{L1}} & \multicolumn{4}{c|}{\textbf{L2}} & \multicolumn{4}{c|}{\textbf{COS}} \\
+\hline
+\bfseries  & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC \\
+\hline
+\bfseries 1 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 2 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 3 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 4 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 5 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 6 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 7 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 8 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 9 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 10 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 11 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 12 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 13 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 14 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 15 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 16 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 17 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 18 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 19 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 20 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+\caption{Depth vs AUC table}
+\label{comparisons:satellite}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\bfseries Depth & \multicolumn{4}{c|}{\textbf{L1}} & \multicolumn{4}{c|}{\textbf{L2}} & \multicolumn{4}{c|}{\textbf{COS}} \\
+\hline
+\bfseries  & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC \\
+\hline
+\bfseries 1 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 2 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 3 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 4 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 5 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 6 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 7 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 8 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 9 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 10 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 11 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 12 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 13 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 14 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 15 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 16 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 17 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 18 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 19 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 20 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+\caption{Depth vs AUC table}
+\label{comparisons:optdigits}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\bfseries Depth & \multicolumn{4}{c|}{\textbf{L1}} & \multicolumn{4}{c|}{\textbf{L2}} & \multicolumn{4}{c|}{\textbf{COS}} \\
+\hline
+\bfseries  & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC \\
+\hline
+\bfseries 1 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 2 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 3 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 4 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 5 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 6 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 7 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 8 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 9 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 10 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 11 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 12 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 13 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 14 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 15 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 16 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 17 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 18 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 19 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 20 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+\caption{Depth vs AUC table}
+\label{comparisons:annthyroid}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\bfseries Depth & \multicolumn{4}{c|}{\textbf{L1}} & \multicolumn{4}{c|}{\textbf{L2}} & \multicolumn{4}{c|}{\textbf{COS}} \\
+\hline
+\bfseries  & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC \\
+\hline
+\bfseries 1 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 2 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 3 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 4 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 5 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 6 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 7 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 8 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 9 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 10 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 11 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 12 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 13 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 14 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 15 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 16 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 17 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 18 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 19 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 20 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+\caption{Depth vs AUC table}
+\label{comparisons:pendigits}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\bfseries Depth & \multicolumn{4}{c|}{\textbf{L1}} & \multicolumn{4}{c|}{\textbf{L2}} & \multicolumn{4}{c|}{\textbf{COS}} \\
+\hline
+\bfseries  & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC & \bfseries CC & \bfseries PC & \bfseries KN & \bfseries SC \\
+\hline
+\bfseries 1 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 2 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 3 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 4 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 5 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 6 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 7 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 8 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 9 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 10 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 11 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 12 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 13 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 14 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 15 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 16 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 17 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 18 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 19 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\bfseries 20 &  &  &  &  &  &  &  &  &  &  &  &   \\
+\hline
+\end{tabular}
+\end{table*}
