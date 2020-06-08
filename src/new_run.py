@@ -18,8 +18,8 @@ sns.set(color_codes=True, font_scale=1.2)
 
 NORMALIZE = False
 SUB_SAMPLE = 50_000
-MAX_DEPTH = 40
-STEP = 1
+MAX_DEPTH = 20
+STEP = 10
 
 
 def _manifold_path(dataset, metric) -> str:
@@ -106,14 +106,15 @@ def create_heat_maps(datasets: List[str], metrics: List[str]):
             ]))
             manifold = Manifold(data, METRICS[metric])
             manifold.graphs = [Graph(manifold.root)]
-            manifold.build_tree(criterion.MaxDepth(10))
+            manifold.build_tree(criterion.MaxDepth(MAX_DEPTH))
 
             results = {method: np.zeros(shape=(100 // STEP, 100 // STEP), dtype=float)
                        for method in METHODS}
-            thresholds = [i for i in range(1, 101, STEP)]
+            thresholds = [i for i in range(STEP, 101, STEP)]
 
             for upper in thresholds:
                 for lower in thresholds:
+                    logging.info(f'upper: {upper}, lower: {lower}')
                     max_lfd, min_lfd = manifold.lfd_range(percentiles=(upper, lower))
                     manifold.root.mark(max_lfd, min_lfd)
                     manifold.build_graph()
@@ -129,15 +130,16 @@ def create_heat_maps(datasets: List[str], metrics: List[str]):
 
                     for cluster in manifold.optimal_graph:
                         cluster.__dict__['_optimal'] = False
+                        manifold.optimal_graph.clear_cache()
 
             for method, table in results.items():
                 filename = os.path.join(dataset_path, f'{metric}-{method}.csv')
-                table = np.maximum(table, 0.5)
+                # table = np.maximum(table, 0.5)
                 with open(filename, 'w') as fp:
                     header = ','.join([f'{i}' for i in thresholds]) + '\n'
                     fp.write(header)
 
-                    for i, row in zip(thresholds, table):
+                    for i, row in reversed(list(zip(thresholds, table))):
                         line = f'{i},' + ','.join([f'{score:.6f}' for score in row]) + '\n'
                         fp.write(line)
     return
@@ -149,24 +151,29 @@ def plot_heat_maps(datasets: List[str], metrics: List[str]):
         for metric in metrics:
             for method in METHODS:
                 filename = os.path.join(dataset_path, f'{metric}-{method}.csv')
+                plotname = os.path.join(dataset_path, f'{metric}-{method}.png')
                 table = pd.read_csv(filename)
-                plt.figure(figsize=(8, 8))
+                plt.figure(figsize=(12, 12))
                 sns.heatmap(
                     data=table,
-                    vmin=0.5,
+                    vmin=0,
                     vmax=1,
                     square=True,
                     cmap='coolwarm',
                     annot=True,
-                    fmt='.4f',
+                    fmt='.2f',
                     linewidths=0.5,
                 )
-                plt.show()
+                plt.xlabel('Upper Threshold')
+                plt.ylabel('Lower Threshold')
+                plt.title(f'{dataset}-{metric}-{method}')
+                plt.savefig(fname=plotname)
+                # plt.show()
     return
 
 
 if __name__ == '__main__':
     _datasets = ['cardio']
     _metrics = ['euclidean']
-    create_heat_maps(_datasets, _metrics)
+    # create_heat_maps(_datasets, _metrics)
     plot_heat_maps(_datasets, _metrics)
