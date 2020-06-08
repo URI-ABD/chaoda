@@ -75,7 +75,8 @@ def depth_auc_tables():
         with open(table_filepath, 'w') as fp:
             for depth in range(1, manifold.depth + 1):
                 line = ' & '.join(results[depth])
-                fp.write(f'\\bfseries {depth} & {line} \\\\ \n\\hline')
+                fp.write(f'\\bfseries {depth} & {line} \\\\')
+                fp.write(f'\\hline')
     return
 
 
