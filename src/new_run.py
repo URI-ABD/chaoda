@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import Counter
 from typing import List
 
 import numpy as np
@@ -18,7 +19,7 @@ sns.set(color_codes=True, font_scale=1.2)
 
 NORMALIZE = False
 SUB_SAMPLE = 50_000
-MAX_DEPTH = 20
+MAX_DEPTH = 30
 STEP = 10
 
 
@@ -84,7 +85,7 @@ def main():
 
 
 # noinspection DuplicatedCode
-def create_heat_maps(datasets: List[str], metrics: List[str]):
+def depth_distributions(datasets: List[str], metrics: List[str]):
     os.makedirs(BUILD_PATH, exist_ok=True)
     os.makedirs(PLOTS_PATH, exist_ok=True)
     os.makedirs(HEAT_MAP_PATH, exist_ok=True)
@@ -93,9 +94,13 @@ def create_heat_maps(datasets: List[str], metrics: List[str]):
         dataset_path = os.path.join(HEAT_MAP_PATH, f'{dataset}')
         os.makedirs(dataset_path, exist_ok=True)
 
+        depths_path = os.path.join(PLOTS_PATH, f'depth-distributions', f'{dataset}')
+        os.makedirs(depths_path, exist_ok=True)
+
         get(dataset)
         data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
         labels = np.squeeze(labels)
+        y_max = 1 + int(np.floor(np.log2(len(labels))))
 
         for metric in metrics:
             logging.info(', '.join([
@@ -110,53 +115,92 @@ def create_heat_maps(datasets: List[str], metrics: List[str]):
 
             results = {method: np.zeros(shape=(100 // STEP, 100 // STEP), dtype=float)
                        for method in METHODS}
-            thresholds = [i for i in range(STEP, 101, STEP)]
 
-            for upper in thresholds:
-                for lower in thresholds:
-                    logging.info(f'upper: {upper}, lower: {lower}')
-                    max_lfd, min_lfd = manifold.lfd_range(percentiles=(upper, lower))
-                    manifold.root.mark(max_lfd, min_lfd)
-                    manifold.build_graph()
+            freq_filename = os.path.join(depths_path, f'{metric}.csv')
+            with open(freq_filename, 'w') as freq_fp:
+                header = ','.join([f'{d}' for d in range(manifold.depth + 1)])
+                freq_fp.write(f'upper,lower,clusters/points,{header}\n')
 
-                    for method in METHODS:
-                        logging.info(f'{dataset}:{METRIC_NAMES[metric]}:({METHOD_NAMES[method]})')
+                thresholds = [i for i in range(STEP, 101, STEP)]
+                for upper in thresholds:
+                    for lower in thresholds:
+                        if lower > upper:
+                            continue
+                        logging.info(f'upper {upper}, lower {lower}')
+                        max_lfd, min_lfd = manifold.lfd_range(percentiles=(upper, lower))
+                        manifold.root.mark(max_lfd, min_lfd)
+                        manifold.build_graph()
 
-                        anomalies = METHODS[method](manifold)
-                        y_true, y_score = list(), list()
-                        [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
-                        i, j = (upper - 1) // STEP, (lower - 1) // STEP
-                        results[method][i][j] = roc_auc_score(y_true, y_score)
+                        for method in METHODS:
+                            logging.info(f'{dataset}:{METRIC_NAMES[metric]}:({METHOD_NAMES[method]})')
 
-                    for cluster in manifold.optimal_graph:
-                        cluster.__dict__['_optimal'] = False
-                        manifold.optimal_graph.clear_cache()
+                            anomalies = METHODS[method](manifold)
+                            y_true, y_score = list(), list()
+                            [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
+                            i, j = (upper - 1) // STEP, (lower - 1) // STEP
+                            results[method][j][i] = roc_auc_score(y_true, y_score)
+
+                        cluster_frequencies = dict(Counter((cluster.depth for cluster in manifold.optimal_graph)))
+                        cluster_frequencies = [np.log2(cluster_frequencies[d] + 1) if d in cluster_frequencies else 0
+                                               for d in range(manifold.depth + 1)]
+                        line = ','.join([f'{freq:.6f}' for freq in cluster_frequencies])
+                        freq_fp.write(f'{upper},{lower},clusters,{line}\n')
+
+                        point_frequencies = [0 for _ in range(manifold.depth + 1)]
+                        for cluster in manifold.optimal_graph:
+                            point_frequencies[cluster.depth] += cluster.cardinality
+                        point_frequencies = [np.log2(freq + 1) for freq in point_frequencies]
+                        line = ','.join([f'{freq:.6f}' for freq in point_frequencies])
+                        freq_fp.write(f'{upper},{lower},points,{line}\n')
+
+                        plt.clf()
+                        title = f'{upper}-{lower}-clusters'
+                        plt.figure(figsize=(9, 9))
+                        plt.bar(range(manifold.depth + 1), cluster_frequencies)
+                        plt.title(title)
+                        plt.xlabel('depth')
+                        plt.ylabel('log(frequency + 1)')
+                        plt.xticks(range(manifold.depth + 1))
+                        plt.yticks(range(y_max + 1))
+                        plotname = os.path.join(depths_path, f'{title}.png')
+                        plt.savefig(fname=plotname)
+                        plt.close('all')
+
+                        plt.clf()
+                        title = f'{upper}-{lower}-points'
+                        plt.figure(figsize=(9, 9))
+                        plt.bar(range(manifold.depth + 1), point_frequencies)
+                        plt.title(title)
+                        plt.xlabel('depth')
+                        plt.ylabel('log(frequency + 1)')
+                        plt.xticks(range(manifold.depth + 1))
+                        plt.yticks(range(y_max + 1))
+                        plotname = os.path.join(depths_path, f'{title}.png')
+                        plt.savefig(fname=plotname)
+                        plt.close('all')
+
+                        for cluster in manifold.optimal_graph:
+                            cluster.__dict__['_optimal'] = False
+                            manifold.optimal_graph.clear_cache()
 
             for method, table in results.items():
-                filename = os.path.join(dataset_path, f'{metric}-{method}.csv')
-                # table = np.maximum(table, 0.5)
-                with open(filename, 'w') as fp:
+                auc_filename = os.path.join(depths_path, f'{metric}-{METHOD_NAMES[method]}.csv')
+                table = np.maximum(table, 0.5)
+                with open(auc_filename, 'w') as auc_fp:
                     header = ','.join([f'{i}' for i in thresholds]) + '\n'
-                    fp.write(header)
+                    auc_fp.write(header)
 
                     for i, row in reversed(list(zip(thresholds, table))):
                         line = f'{i},' + ','.join([f'{score:.6f}' for score in row]) + '\n'
-                        fp.write(line)
-    return
+                        auc_fp.write(line)
 
-
-def plot_heat_maps(datasets: List[str], metrics: List[str]):
-    for dataset in datasets:
-        dataset_path = os.path.join(HEAT_MAP_PATH, f'{dataset}')
-        for metric in metrics:
-            for method in METHODS:
-                filename = os.path.join(dataset_path, f'{metric}-{method}.csv')
+                table = pd.read_csv(auc_filename)
                 plotname = os.path.join(dataset_path, f'{metric}-{method}.png')
-                table = pd.read_csv(filename)
+                plt.clf()
                 plt.figure(figsize=(12, 12))
                 sns.heatmap(
                     data=table,
-                    vmin=0,
+                    vmin=0.5,
                     vmax=1,
                     square=True,
                     cmap='coolwarm',
@@ -168,12 +212,22 @@ def plot_heat_maps(datasets: List[str], metrics: List[str]):
                 plt.ylabel('Lower Threshold')
                 plt.title(f'{dataset}-{metric}-{method}')
                 plt.savefig(fname=plotname)
-                # plt.show()
+                plt.close('all')
+
     return
 
 
 if __name__ == '__main__':
-    _datasets = ['cardio']
+    _datasets = [
+        'vowels',
+        # 'cardio',
+        # 'thyroid',
+        # 'musk',
+        # 'satimage-2',
+        # 'satellite',
+        # 'optdigits',
+        # 'annthyroid',
+        # 'pendigits',
+    ]
     _metrics = ['euclidean']
-    # create_heat_maps(_datasets, _metrics)
-    plot_heat_maps(_datasets, _metrics)
+    depth_distributions(_datasets, _metrics)
