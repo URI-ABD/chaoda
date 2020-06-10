@@ -226,8 +226,6 @@ if __name__ == '__main__':
         # 'satimage-2',
         # 'satellite',
         # 'optdigits',
-        # 'annthyroid',
-        # 'pendigits',
     ]
     _metrics = ['euclidean']
     depth_distributions(_datasets, _metrics)
