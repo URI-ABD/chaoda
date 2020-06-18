@@ -127,8 +127,8 @@ def depth_distributions(datasets: List[str], metrics: List[str]):
                         if lower > upper:
                             continue
                         logging.info(f'upper {upper}, lower {lower}')
-                        max_lfd, min_lfd = manifold.lfd_range(percentiles=(upper, lower))
-                        manifold.root.mark(max_lfd, min_lfd)
+                        max_lfd, min_lfd, grace_depth = manifold.lfd_range(percentiles=(upper, lower))
+                        [cluster.mark(max_lfd, min_lfd) for cluster in manifold.layers[grace_depth].clusters]
                         manifold.build_graph()
 
                         for method in METHODS:
@@ -140,14 +140,14 @@ def depth_distributions(datasets: List[str], metrics: List[str]):
                             i, j = (upper - 1) // STEP, (lower - 1) // STEP
                             results[method][j][i] = roc_auc_score(y_true, y_score)
 
-                        cluster_frequencies = dict(Counter((cluster.depth for cluster in manifold.optimal_graph)))
+                        cluster_frequencies = dict(Counter((cluster.depth for cluster in manifold.graph)))
                         cluster_frequencies = [np.log2(cluster_frequencies[d] + 1) if d in cluster_frequencies else 0
                                                for d in range(manifold.depth + 1)]
                         line = ','.join([f'{freq:.6f}' for freq in cluster_frequencies])
                         freq_fp.write(f'{upper},{lower},clusters,{line}\n')
 
                         point_frequencies = [0 for _ in range(manifold.depth + 1)]
-                        for cluster in manifold.optimal_graph:
+                        for cluster in manifold.graph:
                             point_frequencies[cluster.depth] += cluster.cardinality
                         point_frequencies = [np.log2(freq + 1) for freq in point_frequencies]
                         line = ','.join([f'{freq:.6f}' for freq in point_frequencies])
@@ -179,9 +179,9 @@ def depth_distributions(datasets: List[str], metrics: List[str]):
                         plt.savefig(fname=plotname)
                         plt.close('all')
 
-                        for cluster in manifold.optimal_graph:
+                        for cluster in manifold.graph:
                             cluster.__dict__['_optimal'] = False
-                            manifold.optimal_graph.clear_cache()
+                            manifold.graph.clear_cache()
 
             for method, table in results.items():
                 auc_filename = os.path.join(depths_path, f'{metric}-{METHOD_NAMES[method]}.csv')

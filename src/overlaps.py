@@ -10,10 +10,11 @@ from src.reproduce import BUILD_PATH, PLOTS_PATH
 
 NORMALIZE = False
 SUB_SAMPLE = 50_000
-MAX_DEPTH = 30
+MAX_DEPTH = 20
 STEP = 10
 
 
+# noinspection DuplicatedCode
 def subsumed_fractions(datasets: List[str], metrics: List[str]):
     os.makedirs(BUILD_PATH, exist_ok=True)
     os.makedirs(PLOTS_PATH, exist_ok=True)
@@ -26,30 +27,27 @@ def subsumed_fractions(datasets: List[str], metrics: List[str]):
         for metric in metrics:
             logging.info(f'dataset: {dataset}, metric: {metric}, shape: {data.shape}, outliers: {labels.sum()}')
             manifold = Manifold(data, METRICS[metric])
-            manifold.graphs = [Graph(manifold.root)]
+            manifold.layers = [Graph(manifold.root)]
             manifold.build_tree(criterion.MaxDepth(MAX_DEPTH))
 
-            for depth, graph in enumerate(manifold.graphs[1:]):
-                clusters: List[Cluster] = list(graph.clusters.keys())
-                clusters.sort(key=lambda c: c.radius)
+            max_lfd, min_lfd, grace_depth = manifold.lfd_range(percentiles=(80, 60))
+            [cluster.mark(max_lfd, min_lfd) for cluster in manifold.layers[grace_depth].clusters]
+            manifold.build_graph()
 
-                for i in range(len(clusters) - 1, -1, -1):
-                    if clusters[i].cardinality > 1:
-                        for j in range(i):
-                            if not clusters[j].absorbable:
-                                c1, c2 = clusters[i], clusters[j]
-                                if c1.distance_from([c2.argmedoid]) < c1.radius - c2.radius:
-                                    c2.absorbable = True
+            num_subsumed = len(manifold.graph.clusters) - len(manifold.graph.transition_clusters)
+            logging.info(f'optimal_graph, clusters: {len(manifold.graph.clusters)}, num_subsumed: {num_subsumed}, '
+                         f'fraction_subsumed: {num_subsumed / len(manifold.graph.clusters):.4f}')
 
-                num_absorbable = len([cluster for cluster in clusters if cluster.absorbable])
-                logging.info(f'depth: {depth + 1}, clusters: {len(clusters)}, num_absorbable: {num_absorbable}, '
-                             f'fraction_ absorbable: {num_absorbable / len(clusters):.4f}')
+            for depth, layer in enumerate(manifold.layers[1:]):
+                num_subsumed = len(layer.clusters) - len(layer.transition_clusters)
+                logging.info(f'depth: {depth + 1}, clusters: {len(layer.clusters)}, num_subsumed: {num_subsumed}, '
+                             f'fraction_subsumed: {num_subsumed / len(layer.clusters):.4f}')
 
 
 if __name__ == '__main__':
     _datasets = [
-        # 'vowels',
-        'cardio',
+        'vowels',
+        # 'cardio',
         # 'thyroid',
         # 'musk',
         # 'satimage-2',

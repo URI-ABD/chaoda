@@ -56,7 +56,7 @@ def hierarchical_anomalies(manifold: Manifold) -> Dict[int, float]:
     data = manifold.data
 
     results = {i: list() for i in range(data.shape[0])}
-    for cluster in manifold.optimal_graph:
+    for cluster in manifold.graph:
         ancestry = manifold.ancestry(cluster)
         for i in range(1, len(ancestry)):
             score = float(ancestry[i - 1].cardinality) / (ancestry[i].cardinality * np.sqrt(i))
@@ -72,7 +72,7 @@ def outrank_anomalies(manifold: Manifold) -> Dict[int, float]:
     :param manifold: manifold in which to find anomalies.
     :return: Dictionary of indexes in the data with the confidence (in the range 0. to 1.) that the point is an anomaly.
     """
-    graph = manifold.optimal_graph
+    graph = manifold.graph
     print(f'clusters: {graph.cardinality}, components: {len(graph.subgraphs)}')
     num_samples = 500
     if graph.cardinality < num_samples:
@@ -110,12 +110,12 @@ def k_neighborhood_anomalies(manifold: Manifold, k: int = 10) -> Dict[int, float
                 c = queue.popleft()
                 if c not in visited:
                     visited.add(c)
-                    [queue.append(neighbor) for neighbor in manifold.optimal_graph.neighbors(c)]
+                    [queue.append(neighbor) for neighbor in manifold.graph.neighbors(c)]
             else:
                 break
         return len(visited)
 
-    results = {c: bft(c) for c in manifold.optimal_graph.clusters}
+    results = {c: bft(c) for c in manifold.graph.clusters}
     anomalies: Dict[int, float] = {p: v for c, v in results.items() for p in c.argpoints}
     anomalies = normalize(anomalies)
     return {k: 1. - v for k, v in anomalies.items()}
@@ -129,7 +129,7 @@ def cluster_cardinality_anomalies(manifold: Manifold) -> Dict[int, float]:
     """
     anomalies: Dict[int, float] = {
         p: c.cardinality
-        for c in manifold.optimal_graph.clusters
+        for c in manifold.graph.clusters
         for p in c.argpoints
     }
     anomalies = normalize(anomalies)
@@ -144,7 +144,7 @@ def subgraph_cardinality_anomalies(manifold: Manifold) -> Dict[int, float]:
     """
     anomalies: Dict[int, float] = {
         p: subgraph.cardinality
-        for subgraph in manifold.optimal_graph.subgraphs
+        for subgraph in manifold.graph.subgraphs
         for c in subgraph.clusters
         for p in c.argpoints
     }
