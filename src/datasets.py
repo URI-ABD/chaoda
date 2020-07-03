@@ -24,8 +24,8 @@ DATASETS: Dict = {
     'thyroid': 'https://www.dropbox.com/s/bih0e15a0fukftb/thyroid.mat?dl=0',
     'musk': 'https://www.dropbox.com/s/we6aqhb0m38i60t/musk.mat?dl=0',
     'satimage-2': 'https://www.dropbox.com/s/hckgvu9m6fs441p/satimage-2.mat?dl=0',
-    # 'letter': 'https://www.dropbox.com/s/rt9i95h9jywrtiy/letter.mat?dl=0',
-    # 'speech': 'https://www.dropbox.com/s/w6xv51ctea6uauc/speech.mat?dl=0',
+    'letter': 'https://www.dropbox.com/s/rt9i95h9jywrtiy/letter.mat?dl=0',
+    'speech': 'https://www.dropbox.com/s/w6xv51ctea6uauc/speech.mat?dl=0',
     'pima': 'https://www.dropbox.com/s/mvlwu7p0nyk2a2r/pima.mat?dl=0',
     'satellite': 'https://www.dropbox.com/s/dpzxp8jyr9h93k5/satellite.mat?dl=0',
     'shuttle': 'https://www.dropbox.com/s/mk8ozgisimfn3dw/shuttle.mat?dl=0',
@@ -54,7 +54,7 @@ DATASETS: Dict = {
 
 def min_max_normalization(data):
     for i in range(data.shape[1]):
-        min_x, max_x = np.min(data[:, i]), np.max(data[:, i])
+        min_x, max_x = np.percentile(a=data[:, i], q=[5, 95])
         if min_x == max_x:
             data[:, i] = 0.5
         else:
@@ -82,7 +82,9 @@ def get(dataset: str) -> None:
 def read(dataset: str, normalize: bool = True, subsample: int = None):
     filename = os.path.join(DATA_DIR, f'{dataset}.mat')
     if not os.path.exists(filename):
-        raise ValueError(f'dataset does not exist: {dataset}')
+        get(dataset)
+        if not os.path.exists(filename):
+            raise ValueError(f'dataset does not exist: {dataset}')
 
     data_dict: Dict = {}
     try:
