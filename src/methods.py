@@ -5,6 +5,9 @@ import numpy as np
 from pyclam.manifold import Cluster, Manifold
 
 
+# TODO: Parent-Child radii ratios as proxy to anomalousness.
+
+
 def normalize(anomalies: Dict[int, float]) -> Dict[int, float]:
     min_v, max_v = np.min(list(anomalies.values())), np.max(list(anomalies.values()))
     min_v, max_v, = float(min_v), float(max_v)

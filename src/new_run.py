@@ -18,8 +18,9 @@ HEAT_MAP_PATH = os.path.join(PLOTS_PATH, 'heat_maps')
 sns.set(color_codes=True, font_scale=1.2)
 
 NORMALIZE = False
-SUB_SAMPLE = 50_000
+SUB_SAMPLE = 20_000
 MAX_DEPTH = 30
+FRACTION = 0.2
 STEP = 10
 
 
@@ -100,7 +101,7 @@ def depth_distributions(datasets: List[str], metrics: List[str]):
         get(dataset)
         data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
         labels = np.squeeze(labels)
-        y_max = 1 + int(np.floor(np.log2(len(labels))))
+        # y_max = 1 + int(np.floor(np.log2(len(labels))))
 
         for metric in metrics:
             logging.info(', '.join([
@@ -110,78 +111,73 @@ def depth_distributions(datasets: List[str], metrics: List[str]):
                 f'outliers: {labels.sum()}',
             ]))
             manifold = Manifold(data, METRICS[metric])
-            manifold.graphs = [Graph(manifold.root)]
             manifold.build_tree(criterion.MaxDepth(MAX_DEPTH))
 
             results = {method: np.zeros(shape=(100 // STEP, 100 // STEP), dtype=float)
                        for method in METHODS}
 
-            freq_filename = os.path.join(depths_path, f'{metric}.csv')
-            with open(freq_filename, 'w') as freq_fp:
-                header = ','.join([f'{d}' for d in range(manifold.depth + 1)])
-                freq_fp.write(f'upper,lower,clusters/points,{header}\n')
+            # freq_filename = os.path.join(depths_path, f'{metric}.csv')
+            # with open(freq_filename, 'w') as freq_fp:
+            #     header = ','.join([f'{d}' for d in range(manifold.depth + 1)])
+            #     freq_fp.write(f'upper,lower,clusters/points,{header}\n')
 
-                thresholds = [i for i in range(STEP, 101, STEP)]
-                for upper in thresholds:
-                    for lower in thresholds:
-                        if lower > upper:
-                            continue
-                        logging.info(f'upper {upper}, lower {lower}')
-                        max_lfd, min_lfd, grace_depth = manifold.lfd_range(percentiles=(upper, lower))
-                        [cluster.mark(max_lfd, min_lfd) for cluster in manifold.layers[grace_depth].clusters]
-                        manifold.build_graph()
+            thresholds = [i for i in range(STEP, 101, STEP)]
+            for upper in thresholds:
+                for lower in thresholds:
+                    if lower > upper:
+                        continue
+                    logging.info(f'upper {upper}, lower {lower}')
+                    [cluster.clear_cache() for layer in manifold.layers for cluster in layer.clusters]
+                    manifold.graph = Graph(*criterion.LFDRange(upper, lower)(manifold.root))
+                    manifold.build_graph(criterion.MinimizeSubsumed(FRACTION))
 
-                        for method in METHODS:
-                            logging.info(f'{dataset}:{METRIC_NAMES[metric]}:({METHOD_NAMES[method]})')
+                    for method in METHODS:
+                        logging.info(f'{dataset}:{METRIC_NAMES[metric]}:({METHOD_NAMES[method]})')
 
-                            anomalies = METHODS[method](manifold)
-                            y_true, y_score = list(), list()
-                            [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
-                            i, j = (upper - 1) // STEP, (lower - 1) // STEP
-                            results[method][j][i] = roc_auc_score(y_true, y_score)
+                        anomalies = METHODS[method](manifold)
+                        y_true, y_score = list(), list()
+                        [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
+                        i, j = (upper - 1) // STEP, (lower - 1) // STEP
+                        results[method][j][i] = roc_auc_score(y_true, y_score)
 
-                        cluster_frequencies = dict(Counter((cluster.depth for cluster in manifold.graph)))
-                        cluster_frequencies = [np.log2(cluster_frequencies[d] + 1) if d in cluster_frequencies else 0
-                                               for d in range(manifold.depth + 1)]
-                        line = ','.join([f'{freq:.6f}' for freq in cluster_frequencies])
-                        freq_fp.write(f'{upper},{lower},clusters,{line}\n')
-
-                        point_frequencies = [0 for _ in range(manifold.depth + 1)]
-                        for cluster in manifold.graph:
-                            point_frequencies[cluster.depth] += cluster.cardinality
-                        point_frequencies = [np.log2(freq + 1) for freq in point_frequencies]
-                        line = ','.join([f'{freq:.6f}' for freq in point_frequencies])
-                        freq_fp.write(f'{upper},{lower},points,{line}\n')
-
-                        plt.clf()
-                        title = f'{upper}-{lower}-clusters'
-                        plt.figure(figsize=(9, 9))
-                        plt.bar(range(manifold.depth + 1), cluster_frequencies)
-                        plt.title(title)
-                        plt.xlabel('depth')
-                        plt.ylabel('log(frequency + 1)')
-                        plt.xticks(range(manifold.depth + 1))
-                        plt.yticks(range(y_max + 1))
-                        plotname = os.path.join(depths_path, f'{title}.png')
-                        plt.savefig(fname=plotname)
-                        plt.close('all')
-
-                        plt.clf()
-                        title = f'{upper}-{lower}-points'
-                        plt.figure(figsize=(9, 9))
-                        plt.bar(range(manifold.depth + 1), point_frequencies)
-                        plt.title(title)
-                        plt.xlabel('depth')
-                        plt.ylabel('log(frequency + 1)')
-                        plt.xticks(range(manifold.depth + 1))
-                        plt.yticks(range(y_max + 1))
-                        plotname = os.path.join(depths_path, f'{title}.png')
-                        plt.savefig(fname=plotname)
-                        plt.close('all')
-
-                        for cluster in manifold.graph:
-                            cluster.__dict__['_optimal'] = False
-                            manifold.graph.clear_cache()
+                            # cluster_frequencies = dict(Counter((cluster.depth for cluster in manifold.graph)))
+                            # cluster_frequencies = [np.log2(cluster_frequencies[d] + 1) if d in cluster_frequencies else 0
+                            #                        for d in range(manifold.depth + 1)]
+                            # line = ','.join([f'{freq:.6f}' for freq in cluster_frequencies])
+                            # freq_fp.write(f'{upper},{lower},clusters,{line}\n')
+                            #
+                            # point_frequencies = [0 for _ in range(manifold.depth + 1)]
+                            # for cluster in manifold.graph:
+                            #     point_frequencies[cluster.depth] += cluster.cardinality
+                            # point_frequencies = [np.log2(freq + 1) for freq in point_frequencies]
+                            # line = ','.join([f'{freq:.6f}' for freq in point_frequencies])
+                            # freq_fp.write(f'{upper},{lower},points,{line}\n')
+                            #
+                            # plt.clf()
+                            # title = f'{upper}-{lower}-clusters'
+                            # plt.figure(figsize=(9, 9))
+                            # plt.bar(range(manifold.depth + 1), cluster_frequencies)
+                            # plt.title(title)
+                            # plt.xlabel('depth')
+                            # plt.ylabel('log(frequency + 1)')
+                            # plt.xticks(range(manifold.depth + 1))
+                            # plt.yticks(range(y_max + 1))
+                            # plotname = os.path.join(depths_path, f'{title}.png')
+                            # plt.savefig(fname=plotname)
+                            # plt.close('all')
+                            #
+                            # plt.clf()
+                            # title = f'{upper}-{lower}-points'
+                            # plt.figure(figsize=(9, 9))
+                            # plt.bar(range(manifold.depth + 1), point_frequencies)
+                            # plt.title(title)
+                            # plt.xlabel('depth')
+                            # plt.ylabel('log(frequency + 1)')
+                            # plt.xticks(range(manifold.depth + 1))
+                            # plt.yticks(range(y_max + 1))
+                            # plotname = os.path.join(depths_path, f'{title}.png')
+                            # plt.savefig(fname=plotname)
+                            # plt.close('all')
 
             for method, table in results.items():
                 auc_filename = os.path.join(depths_path, f'{metric}-{METHOD_NAMES[method]}.csv')
@@ -220,8 +216,8 @@ def depth_distributions(datasets: List[str], metrics: List[str]):
 if __name__ == '__main__':
     _datasets = [
         'vowels',
-        # 'cardio',
-        # 'thyroid',
+        'cardio',
+        'thyroid',
         # 'musk',
         # 'satimage-2',
         # 'satellite',

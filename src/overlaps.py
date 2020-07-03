@@ -11,6 +11,7 @@ from src.reproduce import BUILD_PATH, PLOTS_PATH
 NORMALIZE = False
 SUB_SAMPLE = 50_000
 MAX_DEPTH = 20
+FRACTION = 0.05
 STEP = 10
 
 
@@ -26,22 +27,14 @@ def subsumed_fractions(datasets: List[str], metrics: List[str]):
 
         for metric in metrics:
             logging.info(f'dataset: {dataset}, metric: {metric}, shape: {data.shape}, outliers: {labels.sum()}')
-            manifold = Manifold(data, METRICS[metric])
-            manifold.layers = [Graph(manifold.root)]
-            manifold.build_tree(criterion.MaxDepth(MAX_DEPTH))
+            manifold = Manifold(data, METRICS[metric]).build(
+                criterion.MaxDepth(MAX_DEPTH),
+                criterion.LFDRange(80, 20),
+                criterion.MinimizeSubsumed(FRACTION),
+            )
 
-            max_lfd, min_lfd, grace_depth = manifold.lfd_range(percentiles=(80, 60))
-            [cluster.mark(max_lfd, min_lfd) for cluster in manifold.layers[grace_depth].clusters]
-            manifold.build_graph()
-
-            num_subsumed = len(manifold.graph.clusters) - len(manifold.graph.transition_clusters)
-            logging.info(f'optimal_graph, clusters: {len(manifold.graph.clusters)}, num_subsumed: {num_subsumed}, '
-                         f'fraction_subsumed: {num_subsumed / len(manifold.graph.clusters):.4f}')
-
-            for depth, layer in enumerate(manifold.layers[1:]):
-                num_subsumed = len(layer.clusters) - len(layer.transition_clusters)
-                logging.info(f'depth: {depth + 1}, clusters: {len(layer.clusters)}, num_subsumed: {num_subsumed}, '
-                             f'fraction_subsumed: {num_subsumed / len(layer.clusters):.4f}')
+            fraction = len(manifold.graph.subsumed_clusters) / manifold.graph.cardinality
+            logging.info(f'optimal_graph, fraction_subsumed: {fraction:.4f}')
 
 
 if __name__ == '__main__':
