@@ -8,10 +8,8 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.svm import OneClassSVM
 
-# noinspection PyUnresolvedReferences
-from datasets import get, read, DATASETS, METRICS
-# noinspection PyUnresolvedReferences
-from methods import METHODS
+from src.datasets import get, read, DATASETS, METRICS
+from src.methods import METHODS
 
 PAPERS = {
     'SVM sklearn': {
@@ -169,8 +167,8 @@ METRIC_NAMES = {
     'manhattan': 'L1',
 }
 NORMALIZE = False
-SUB_SAMPLE = 100_000  # Set this to None to not subsample large datasets
-MAX_DEPTH = 50
+SUB_SAMPLE = 5_000  # Set this to None to not subsample large datasets
+MAX_DEPTH = 20
 PERCENTILES = list(range(0, 101, 10))
 BUILD_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
 PLOTS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plots'))

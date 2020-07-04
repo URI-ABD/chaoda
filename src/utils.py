@@ -1,3 +1,5 @@
+import os
+
 
 def make_folders(dataset, metric, method):
     dir_paths = [f'../data',
