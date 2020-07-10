@@ -10,12 +10,12 @@ from src.reproduce import PLOTS_PATH
 PLOTS_PATH = os.path.join(PLOTS_PATH, 'box-tree')
 
 NORMALIZE = False
-SUB_SAMPLE = 50_000
-MIN_POINTS = 5
-MAX_DEPTH = 50
-SCALE = 2
+SUB_SAMPLE = 20_000
+MIN_POINTS = 10
+MAX_DEPTH = 30
+SCALE = 1
 OFFSET = 1 * SCALE
-HEIGHT = 15 * SCALE - OFFSET
+HEIGHT = 25 * SCALE - OFFSET
 TOTAL_WIDTH = (1920 - 200) * SCALE
 IMAGE_SIZE = (1920 * SCALE, 1080 * SCALE)
 
@@ -27,6 +27,11 @@ def draw_tree(manifold: Manifold) -> Image:
     x1, y1 = 100 * SCALE, 100 * SCALE
     x2, y2 = x1, y1 + HEIGHT
 
+    max_lfd = max(max((cluster.local_fractal_dimension
+                       for cluster in layer.clusters))
+                  for layer in manifold.layers)
+    mid_lfd = max_lfd / 2
+
     for depth, layer in enumerate(manifold.layers):
         clusters = list(sorted(list(layer.clusters)))
 
@@ -35,8 +40,6 @@ def draw_tree(manifold: Manifold) -> Image:
         widths = {cluster: factor * width for cluster, width in widths.items()}
 
         lfds = {cluster: cluster.local_fractal_dimension for cluster in clusters}
-        max_lfd = max(lfds.values())
-        mid_lfd = max_lfd / 2
 
         for cluster in clusters:
             x2, y2 = x2 + widths[cluster], y2
@@ -63,13 +66,14 @@ def main(dataset: str):
     )
 
     im: Image = draw_tree(manifold)
-    im.save(os.path.join(PLOTS_PATH, f'{dataset}.jpg'))
+    im.save(os.path.join(PLOTS_PATH, f'{dataset}.png'))
     return
 
 
 if __name__ == '__main__':
     os.makedirs(PLOTS_PATH, exist_ok=True)
     # _datasets = [
+    #     'annthyroid'
     #     'vowels',
     #     'cardio',
     #     'thyroid',
