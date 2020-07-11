@@ -2,8 +2,7 @@ import logging
 import os
 from typing import Dict, Tuple, List
 
-import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from pyclam import Manifold, criterion, Cluster
 
 from src.datasets import read, DATASETS
@@ -15,8 +14,9 @@ NORMALIZE = False
 SUB_SAMPLE = 100_000
 MAX_DEPTH = 30
 SCALE = 2
+SIZE = 25
 OFFSET = 1 * SCALE
-HEIGHT = 25 * SCALE - OFFSET
+HEIGHT = SIZE * SCALE - OFFSET
 TOTAL_WIDTH = (1920 - 200) * SCALE
 IMAGE_SIZE = (1920 * SCALE, 1080 * SCALE)
 
@@ -24,6 +24,7 @@ IMAGE_SIZE = (1920 * SCALE, 1080 * SCALE)
 def draw_tree(manifold: Manifold) -> Image:
     im: Image = Image.new(mode='RGB', size=IMAGE_SIZE, color=(256, 256, 256))
     draw: ImageDraw = ImageDraw.Draw(im=im)
+    font = ImageFont.truetype(font='../arial.ttf', size=(SIZE - OFFSET) * SCALE)
 
     # Find sizes of all subtrees
     widths: Dict[Cluster, int] = dict()
@@ -41,13 +42,19 @@ def draw_tree(manifold: Manifold) -> Image:
         for layer in manifold.layers
         for cluster in layer.clusters
     }
-    max_lfd, median_lfd = max(lfds.values()), float(np.median(list(lfds.values())))
+    max_lfd = max(lfds.values())
     lfds = {cluster: 2 * lfd / max_lfd for cluster, lfd in lfds.items()}
 
     x1, y1 = 100 * SCALE, 100 * SCALE
     x2, y2 = x1 + TOTAL_WIDTH, y1 + HEIGHT
     rectangles: Dict[Cluster, Tuple[int, int, int, int]] = {manifold.root: (x1, y1, x2, y2)}
     for layer in manifold.layers:
+        draw.text(
+            xy=(50 * SCALE, (100 + 25 * layer.depth) * SCALE),
+            text=f"{layer.depth}",
+            fill=(0, 0, 0),
+            font=font,
+        )
         # constrain children to the rectangles of parent
         clusters: List[Cluster] = [cluster for cluster in layer.clusters if cluster.children]
         for cluster in clusters:
@@ -70,7 +77,7 @@ def draw_tree(manifold: Manifold) -> Image:
             lfd = lfds[cluster]
             color = (1 - lfd) if lfd < 1 else (lfd - 1)
             color = 128 + int(127 * color)
-            fill = (0, 0, color) if lfd < median_lfd else (color, 0, 0)
+            fill = (0, 0, color) if lfd < 1 else (color, 0, 0)
             outline = (255, 255, 255) if cluster.children else (0, 0, 0)
             draw.rectangle(xy=rectangles[cluster], fill=fill, outline=outline)
 
@@ -95,11 +102,11 @@ def main(dataset: str):
 
 if __name__ == '__main__':
     os.makedirs(PLOTS_PATH, exist_ok=True)
-    _datasets = [
-        'cardio',
-        'musk',
-        'thyroid',
-        'vowels',
-    ]
-    # _datasets = list(DATASETS.keys())
+    # _datasets = [
+    #     'cardio',
+    #     'musk',
+    #     'thyroid',
+    #     'vowels',
+    # ]
+    _datasets = list(DATASETS.keys())
     [main(dataset=_d) for _d in _datasets]
