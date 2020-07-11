@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Dict, Tuple, List
 
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from pyclam import Manifold, criterion, Cluster
 
@@ -21,20 +22,44 @@ TOTAL_WIDTH = (1920 - 200) * SCALE
 IMAGE_SIZE = (1920 * SCALE, 1080 * SCALE)
 
 
-def draw_tree(manifold: Manifold) -> Image:
+def _subtree_widths(cluster: Cluster, widths: Dict[Cluster, float]) -> float:
+    if cluster not in widths:
+        widths[cluster] = sum(_subtree_widths(child, widths) for child in cluster.children) + 1
+
+    return widths[cluster]
+
+
+def _cardinality_widths(cluster: Cluster, widths: Dict[Cluster, float]) -> float:
+    if cluster not in widths:
+        widths[cluster] = float(np.log2(cluster.cardinality + 1))
+        [_cardinality_widths(child, widths) for child in cluster.children]
+
+    return widths[cluster]
+
+
+def _radii_widths(cluster: Cluster, widths: Dict[Cluster, float]) -> float:
+    if cluster not in widths:
+        widths[cluster] = float(np.log2(cluster.radius + 2))
+        [_radii_widths(child, widths) for child in cluster.children]
+
+    return widths[cluster]
+
+
+_WIDTH_MODES = {
+    'cardinality': _cardinality_widths,
+    'radii': _radii_widths,
+    'subtree': _subtree_widths,
+}
+
+
+def draw_rectangles(manifold: Manifold, mode: str) -> Image:
     im: Image = Image.new(mode='RGB', size=IMAGE_SIZE, color=(256, 256, 256))
     draw: ImageDraw = ImageDraw.Draw(im=im)
     font = ImageFont.truetype(font='../arial.ttf', size=(SIZE - OFFSET) * SCALE)
 
     # Find sizes of all subtrees
-    widths: Dict[Cluster, int] = dict()
-
-    def calculate_widths(cluster: Cluster) -> int:
-        if cluster not in widths:
-            widths[cluster] = sum(map(calculate_widths, cluster.children)) if cluster.children else 1
-        return widths[cluster]
-
-    calculate_widths(manifold.root)
+    widths: Dict[Cluster, float] = dict()
+    _WIDTH_MODES[mode](manifold.root, widths)
 
     # normalize lfd range to [0, 2]
     lfds: Dict[Cluster, float] = {
@@ -50,7 +75,7 @@ def draw_tree(manifold: Manifold) -> Image:
     rectangles: Dict[Cluster, Tuple[int, int, int, int]] = {manifold.root: (x1, y1, x2, y2)}
     for layer in manifold.layers:
         draw.text(
-            xy=(50 * SCALE, (100 + 25 * layer.depth) * SCALE),
+            xy=(50 * SCALE, (95 + SIZE * layer.depth) * SCALE),
             text=f"{layer.depth}",
             fill=(0, 0, 0),
             font=font,
@@ -84,7 +109,12 @@ def draw_tree(manifold: Manifold) -> Image:
     return im
 
 
-def main(dataset: str):
+def draw_tree(dataset: str, modes: List[str]):
+    for mode in modes:
+        if mode not in _WIDTH_MODES:
+            raise ValueError(f"{mode} is not a valid option for widths.\n"
+                             f"options are: {_WIDTH_MODES.keys()}")
+
     logging.info(f"building manifold for {dataset}")
     data, labels = read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
     min_points = 1 if len(data) < 4_000 else 4 if len(data) < 16_000 else 8 if len(data) < 64_000 else 16
@@ -94,19 +124,17 @@ def main(dataset: str):
         criterion.MinPoints(min_points),
     )
 
-    logging.info(f"drawing box-tree for {dataset}")
-    im: Image = draw_tree(manifold)
-    im.save(os.path.join(PLOTS_PATH, f'{dataset}.png'))
+    for mode in modes:
+        logging.info(f"drawing box-tree for {dataset} by {mode}")
+        im: Image = draw_rectangles(manifold, mode)
+        im.save(os.path.join(PLOTS_PATH, f'{dataset}-{mode}.png'))
     return
 
 
 if __name__ == '__main__':
     os.makedirs(PLOTS_PATH, exist_ok=True)
-    # _datasets = [
-    #     'cardio',
-    #     'musk',
-    #     'thyroid',
-    #     'vowels',
-    # ]
-    _datasets = list(DATASETS.keys())
-    [main(dataset=_d) for _d in _datasets]
+    _datasets = list(DATASETS.keys())[:1]
+    _modes = list(_WIDTH_MODES.keys())
+    # _datasets = list(DATASETS.keys())
+    # _modes = list(_MODES.keys())
+    [draw_tree(dataset=_d, modes=_modes) for _d in _datasets]
