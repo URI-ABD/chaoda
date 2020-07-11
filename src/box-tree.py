@@ -45,22 +45,11 @@ def _radii_widths(cluster: Cluster, widths: Dict[Cluster, float]) -> float:
     return widths[cluster]
 
 
-_WIDTH_MODES = {
-    'cardinality': _cardinality_widths,
-    'radii': _radii_widths,
-    'subtree': _subtree_widths,
-}
-
-
-def draw_rectangles(manifold: Manifold, mode: str) -> Image:
-    im: Image = Image.new(mode='RGB', size=IMAGE_SIZE, color=(256, 256, 256))
-    draw: ImageDraw = ImageDraw.Draw(im=im)
-    font = ImageFont.truetype(font='../arial.ttf', size=(SIZE - OFFSET) * SCALE)
-
-    # Find sizes of all subtrees
-    widths: Dict[Cluster, float] = dict()
-    _WIDTH_MODES[mode](manifold.root, widths)
-
+def _lfd_colors(
+        manifold: Manifold,
+        draw: ImageDraw,
+        rectangles: Dict[Cluster, Tuple[int, int, int, int]],
+):
     # normalize lfd range to [0, 2]
     lfds: Dict[Cluster, float] = {
         cluster: cluster.local_fractal_dimension
@@ -69,6 +58,37 @@ def draw_rectangles(manifold: Manifold, mode: str) -> Image:
     }
     max_lfd = max(lfds.values())
     lfds = {cluster: 2 * lfd / max_lfd for cluster, lfd in lfds.items()}
+
+    for layer in manifold.layers:
+        for cluster in layer.clusters:
+            lfd = lfds[cluster]
+            color = (1 - lfd) if lfd < 1 else (lfd - 1)
+            color = 100 + int(155 * color)
+            fill = (0, 0, color) if lfd < 1 else (color, 0, 0)
+            outline = (255, 255, 255) if cluster.children else (0, 0, 0)
+            draw.rectangle(xy=rectangles[cluster], fill=fill, outline=outline)
+    return
+
+
+_WIDTH_MODES = {
+    'cardinality': _cardinality_widths,
+    'radii': _radii_widths,
+    'subtree': _subtree_widths,
+}
+
+_COLOR_MODES = {
+    'lfd': _lfd_colors,
+}
+
+
+def draw_rectangles(manifold: Manifold, width_mode: str, color_mode: str) -> Image:
+    im: Image = Image.new(mode='RGB', size=IMAGE_SIZE, color=(256, 256, 256))
+    draw: ImageDraw = ImageDraw.Draw(im=im)
+    font = ImageFont.truetype(font='../arial.ttf', size=(SIZE - OFFSET) * SCALE)
+
+    # Find sizes of all subtrees
+    widths: Dict[Cluster, float] = dict()
+    _WIDTH_MODES[width_mode](manifold.root, widths)
 
     x1, y1 = 100 * SCALE, 100 * SCALE
     x2, y2 = x1 + TOTAL_WIDTH, y1 + HEIGHT
@@ -97,22 +117,20 @@ def draw_rectangles(manifold: Manifold, mode: str) -> Image:
                 rectangles[child] = (x1, y1, x2, y2)
                 x1 = x2 + OFFSET
 
-        # draw rectangles for all clusters
-        for cluster in layer.clusters:
-            lfd = lfds[cluster]
-            color = (1 - lfd) if lfd < 1 else (lfd - 1)
-            color = 128 + int(127 * color)
-            fill = (0, 0, color) if lfd < 1 else (color, 0, 0)
-            outline = (255, 255, 255) if cluster.children else (0, 0, 0)
-            draw.rectangle(xy=rectangles[cluster], fill=fill, outline=outline)
+    # draw rectangles for all clusters
+    _COLOR_MODES[color_mode](manifold, draw, rectangles)
 
     return im
 
 
-def draw_tree(dataset: str, modes: List[str]):
-    for mode in modes:
-        if mode not in _WIDTH_MODES:
-            raise ValueError(f"{mode} is not a valid option for widths.\n"
+def draw_tree(
+        dataset: str,
+        width_modes: List[str],
+        color_modes: List[str],
+):
+    for width_mode in width_modes:
+        if width_mode not in _WIDTH_MODES:
+            raise ValueError(f"{width_mode} is not a valid option for widths.\n"
                              f"options are: {_WIDTH_MODES.keys()}")
 
     logging.info(f"building manifold for {dataset}")
@@ -124,17 +142,18 @@ def draw_tree(dataset: str, modes: List[str]):
         criterion.MinPoints(min_points),
     )
 
-    for mode in modes:
-        logging.info(f"drawing box-tree for {dataset} by {mode}")
-        im: Image = draw_rectangles(manifold, mode)
-        im.save(os.path.join(PLOTS_PATH, f'{dataset}-{mode}.png'))
+    for width_mode in width_modes:
+        for color_mode in color_modes:
+            logging.info(f"drawing box-tree for {dataset} by {width_mode}, {color_mode}")
+            im: Image = draw_rectangles(manifold, width_mode, color_mode)
+            im.save(os.path.join(PLOTS_PATH, f'{dataset}-{width_mode}-{color_mode}.png'))
     return
 
 
 if __name__ == '__main__':
     os.makedirs(PLOTS_PATH, exist_ok=True)
     _datasets = list(DATASETS.keys())[:1]
-    _modes = list(_WIDTH_MODES.keys())
     # _datasets = list(DATASETS.keys())
-    # _modes = list(_MODES.keys())
-    [draw_tree(dataset=_d, modes=_modes) for _d in _datasets]
+    _width_modes = list(_WIDTH_MODES.keys())
+    _color_modes = list(_COLOR_MODES.keys())
+    [draw_tree(dataset=_d, width_modes=_width_modes, color_modes=_color_modes) for _d in _datasets]
