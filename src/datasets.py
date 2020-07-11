@@ -65,7 +65,7 @@ def min_max_normalization(data):
 def get(dataset: str) -> None:
     """ Download a dataset if it does not exist. """
     if dataset not in DATASETS:
-        raise ValueError('dataset given is not in datasets')
+        raise ValueError(f'{dataset} given is not in datasets')
     
     filename = os.path.join(DATA_DIR, f'{dataset}.mat')
     if not os.path.exists(filename):
