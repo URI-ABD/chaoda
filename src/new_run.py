@@ -1,6 +1,5 @@
 import logging
 import os
-from collections import Counter
 from typing import List
 
 import numpy as np
@@ -70,7 +69,7 @@ def main():
             for method in ['cluster_cardinality', 'hierarchical', 'k_neighborhood', 'subgraph_cardinality']:
                 logging.info(f'{dataset}:{METRIC_NAMES[metric]}:({METHOD_NAMES[method]})')
 
-                anomalies = METHODS[method](manifold)
+                anomalies = METHODS[method](manifold.graph)
                 y_true, y_score = list(), list()
                 [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
                 results[dataset].append(f'{roc_auc_score(y_true, y_score):.3f}')
@@ -133,7 +132,7 @@ def depth_distributions(datasets: List[str], metrics: List[str]):
                     for method in METHODS:
                         logging.info(f'{dataset}:{METRIC_NAMES[metric]}:({METHOD_NAMES[method]})')
 
-                        anomalies = METHODS[method](manifold)
+                        anomalies = METHODS[method](manifold.graph)
                         y_true, y_score = list(), list()
                         [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
                         i, j = (upper - 1) // STEP, (lower - 1) // STEP
