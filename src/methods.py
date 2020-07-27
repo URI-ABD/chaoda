@@ -2,7 +2,7 @@ from collections import deque
 from typing import Dict
 
 import numpy as np
-from pyclam.manifold import Cluster, Manifold
+from pyclam.manifold import Cluster, Graph
 
 
 # TODO: Parent-Child radii ratios as proxy to anomalousness.
@@ -55,11 +55,12 @@ def normalize(anomalies: Dict[int, float]) -> Dict[int, float]:
 #     return normalize(scores)
 
 
-def hierarchical_anomalies(manifold: Manifold) -> Dict[int, float]:
+def hierarchical_anomalies(graph: Graph) -> Dict[int, float]:
+    manifold = graph.manifold
     data = manifold.data
 
     results = {i: list() for i in range(data.shape[0])}
-    for cluster in manifold.graph:
+    for cluster in graph:
         ancestry = manifold.ancestry(cluster)
         for i in range(1, len(ancestry)):
             score = float(ancestry[i - 1].cardinality) / (ancestry[i].cardinality * np.sqrt(i))
@@ -69,13 +70,12 @@ def hierarchical_anomalies(manifold: Manifold) -> Dict[int, float]:
     return normalize(results)
 
 
-def outrank_anomalies(manifold: Manifold) -> Dict[int, float]:
+def outrank_anomalies(graph: Graph) -> Dict[int, float]:
     """ Determines anomalies by the Outrank-Algorithm.
 
-    :param manifold: manifold in which to find anomalies.
+    :param graph: Graph in which to find anomalies.
     :return: Dictionary of indexes in the data with the confidence (in the range 0. to 1.) that the point is an anomaly.
     """
-    graph = manifold.graph
     print(f'clusters: {graph.cardinality}, components: {len(graph.subgraphs)}')
     num_samples = 500
     if graph.cardinality < num_samples:
@@ -86,7 +86,7 @@ def outrank_anomalies(manifold: Manifold) -> Dict[int, float]:
     print(len(sample_clusters), steps)
 
     scores: Dict[Cluster, float] = graph.random_walks(
-        clusters=sample_clusters,
+        starts=sample_clusters,
         steps=min(graph.cardinality * 5, steps),
     )
 
@@ -98,10 +98,10 @@ def outrank_anomalies(manifold: Manifold) -> Dict[int, float]:
     return {k: 1. - v for k, v in anomalies.items()}
 
 
-def k_neighborhood_anomalies(manifold: Manifold, k: int = 10) -> Dict[int, float]:
+def k_neighborhood_anomalies(graph: Graph, k: int = 10) -> Dict[int, float]:
     """ Determines anomalies by the considering the graph-neighborhood of clusters.
 
-    :param manifold: manifold in which to find anomalies.
+    :param graph: Graph in which to find anomalies.
     :param k: size of neighborhood to consider.
     :return: Dictionary of indexes in the data with the confidence (in the range 0. to 1.) that the point is an anomaly.
     """
@@ -113,41 +113,41 @@ def k_neighborhood_anomalies(manifold: Manifold, k: int = 10) -> Dict[int, float
                 c = queue.popleft()
                 if c not in visited:
                     visited.add(c)
-                    [queue.append(neighbor) for neighbor in manifold.graph.neighbors(c)]
+                    [queue.append(neighbor) for neighbor in graph.neighbors(c)]
             else:
                 break
         return len(visited)
 
-    results = {c: bft(c) for c in manifold.graph.clusters}
+    results = {c: bft(c) for c in graph.clusters}
     anomalies: Dict[int, float] = {p: v for c, v in results.items() for p in c.argpoints}
     anomalies = normalize(anomalies)
     return {k: 1. - v for k, v in anomalies.items()}
 
 
-def cluster_cardinality_anomalies(manifold: Manifold) -> Dict[int, float]:
+def cluster_cardinality_anomalies(graph: Graph) -> Dict[int, float]:
     """ Determines anomalies by the considering the cardinality of clusters in the graph.
 
-    :param manifold: Manifold in which to find anomalies.
+    :param graph: Graph in which to find anomalies.
     :return: Dictionary of indexes in the data with the confidence (in the range 0. to 1.) that the point is an anomaly.
     """
     anomalies: Dict[int, float] = {
         p: c.cardinality
-        for c in manifold.graph.clusters
+        for c in graph.clusters
         for p in c.argpoints
     }
     anomalies = normalize(anomalies)
     return {p: 1. - v for p, v in anomalies.items()}
 
 
-def subgraph_cardinality_anomalies(manifold: Manifold) -> Dict[int, float]:
+def subgraph_cardinality_anomalies(graph: Graph) -> Dict[int, float]:
     """ Determines anomalies by the considering the cardinality of connected components in the graph.
 
-    :param manifold: Manifold in which to find anomalies.
+    :param graph: Graph in which to find anomalies.
     :return: Dictionary of indexes in the data with the confidence (in the range 0. to 1.) that the point is an anomaly.
     """
     anomalies: Dict[int, float] = {
         p: subgraph.cardinality
-        for subgraph in manifold.graph.subgraphs
+        for subgraph in graph.subgraphs
         for c in subgraph.clusters
         for p in c.argpoints
     }
