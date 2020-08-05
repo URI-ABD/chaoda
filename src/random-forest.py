@@ -3,19 +3,22 @@ import os
 from typing import List, Dict
 
 import numpy as np
+import pandas as pd
+import pydotplus
 from pyclam import Manifold, criterion, Graph
 from scipy.stats import gmean, hmean
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, mean_squared_error
+from sklearn.tree import DecisionTreeRegressor, export_graphviz
 
 from src import datasets as chaoda_datasets
-from src.datasets import DATASETS
+from src.datasets import DATASETS, METRICS
 from src.methods import METHODS
 
 TRAIN_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'train'))
 
 NORMALIZE = True
 SUB_SAMPLE = 100_000
-MAX_DEPTH = 20
+MAX_DEPTH = 50
 TRAIN_DATASETS = [
     'annthyroid',
     'cardio',
@@ -104,13 +107,16 @@ def auc_scores(graph: Graph, labels: List[int]) -> List[float]:
 def create_training_data(filename: str, datasets: List[str]):
     feature_names = ','.join([f'{extractor}-{mean}' for extractor in FEATURE_EXTRACTORS for mean in MEANS])
     labels = ','.join([f'auc-{method}' for method in METHODS])
-    header = f'dataset,depth,{labels},{feature_names}\n'
+    header = f'dataset,metric,depth,{labels},{feature_names}\n'
 
-    with open(filename, 'w') as fp:
-        fp.write(header)
-        for dataset in datasets:
-            data, labels = chaoda_datasets.read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
-            manifold = Manifold(data, metric='euclidean').build(
+    if not os.path.exists(filename):
+        with open(filename, 'w') as fp:
+            fp.write(header)
+
+    for dataset in datasets:
+        data, labels = chaoda_datasets.read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
+        for metric in METRICS.values():
+            manifold = Manifold(data, metric=metric).build(
                 criterion.MaxDepth(MAX_DEPTH),
                 criterion.Depth(MAX_DEPTH),
             )
@@ -119,17 +125,63 @@ def create_training_data(filename: str, datasets: List[str]):
                     logging.info(f'writing layer {layer.depth}...')
                     features = create_features(layer)
                     scores = auc_scores(layer, labels)
-                    features_line = ','.join([f'{f:.12f}' for f in features])
-                    scores_line = ','.join([f'{f:.12f}' for f in scores])
-                    fp.write(f'{dataset},{layer.depth},{scores_line},{features_line}\n')
+                    features_line = ','.join([f'{f:.8f}' for f in features])
+                    scores_line = ','.join([f'{f:.8f}' for f in scores])
+
+                    with open(filename, 'a') as fp:
+                        fp.write(f'{dataset},{layer.depth},{scores_line},{features_line}\n')
             # break
+    return
+
+
+def create_train_test_data(train_file: str, test_file: str):
+    for seed in range(10):
+        create_training_data(train_file, TRAIN_DATASETS)
+    test_datasets = [d for d in DATASETS if d not in TRAIN_DATASETS]
+    create_training_data(test_file, test_datasets)
+    return
+
+
+def train_tree(train_file: str, test_file: str, target: str):
+    graph_out = os.path.join(TRAIN_PATH, f'{target}_tree.png')
+    features = ['lfd-gmean', 'lfd-hmean', 'lfd-mean', 'cardinality-gmean',
+                'cardinality-hmean', 'cardinality-mean', 'radii-gmean', 'radii-hmean',
+                'radii-mean']
+
+    train_df = pd.read_csv(train_file)
+    train_x = train_df[features]
+    train_y = train_df[target]
+
+    test_df = pd.read_csv(test_file)
+    test_x = test_df[features]
+    test_y = test_df[target]
+
+    decision_tree = DecisionTreeRegressor(max_depth=3)
+    decision_tree = decision_tree.fit(train_x, train_y)
+    pred_y = decision_tree.predict(test_x)
+    print(f'{target} MSE: {mean_squared_error(test_y, pred_y):.3f}')
+
+    export = export_graphviz(decision_tree, out_file=None, feature_names=features)
+    graph = pydotplus.graph_from_dot_data(export)
+    graph.write_png(graph_out)
+
+    return
+
+
+def print_trees(train_file: str, test_file: str):
+    targets = [
+        'auc-cluster_cardinality',
+        'auc-hierarchical',
+        'auc-k_neighborhood',
+        'auc-subgraph_cardinality',
+    ]
+    [train_tree(train_file, test_file, target) for target in targets]
     return
 
 
 if __name__ == '__main__':
     os.makedirs(TRAIN_PATH, exist_ok=True)
     _train_filename = os.path.join(TRAIN_PATH, 'train.csv')
-    create_training_data(_train_filename, TRAIN_DATASETS)
     _test_filename = os.path.join(TRAIN_PATH, 'test.csv')
-    _test_datasets = [_d for _d in DATASETS if _d not in TRAIN_DATASETS]
-    create_training_data(_test_filename, _test_datasets)
+    # create_train_test_data(_train_filename, _test_filename)
+    print_trees(_train_filename, _test_filename)
