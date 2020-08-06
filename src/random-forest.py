@@ -11,7 +11,7 @@ from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.tree import DecisionTreeRegressor, export_graphviz
 
 from src import datasets as chaoda_datasets
-from src.datasets import DATASETS, METRICS
+from src.datasets import DATASETS
 from src.methods import METHODS
 
 TRAIN_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'train'))
@@ -50,8 +50,8 @@ def cardinality_features(graph: Graph) -> List[float]:
 
 def radii_features(graph: Graph) -> List[float]:
     radii = [
-        (cluster.radius if cluster.radius != 0 else 1e-4)
-        / (cluster.parent.radius if cluster.parent.radius != 0 else 1e-4)
+        (cluster.radius if cluster.radius > 0 else 1e-4)
+        / (cluster.parent.radius if cluster.parent.radius > 0 else 1e-4)
         for cluster in graph.clusters
     ]
     means = [mean(radii) for mean in MEANS.values()]
@@ -115,9 +115,12 @@ def create_training_data(filename: str, datasets: List[str]):
 
     for dataset in datasets:
         data, labels = chaoda_datasets.read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
-        for metric in METRICS.values():
+        min_points: int = 2 if len(data) < 2_000 else 4 if len(data) < 8_000 else 8 if len(data) < 32_000 else 16
+        for metric in ['euclidean', 'cityblock']:
+            logging.info(f'extracting features for {dataset}-{metric}')
             manifold = Manifold(data, metric=metric).build(
                 criterion.MaxDepth(MAX_DEPTH),
+                criterion.MinPoints(min_points),
                 criterion.Depth(MAX_DEPTH),
             )
             for layer in manifold.layers:
@@ -129,37 +132,48 @@ def create_training_data(filename: str, datasets: List[str]):
                     scores_line = ','.join([f'{f:.8f}' for f in scores])
 
                     with open(filename, 'a') as fp:
-                        fp.write(f'{dataset},{layer.depth},{scores_line},{features_line}\n')
+                        fp.write(f'{dataset},{metric},{layer.depth},{scores_line},{features_line}\n')
             # break
     return
 
 
-def create_train_test_data(train_file: str, test_file: str):
+def create_train_test_data(train_file: str):
     for seed in range(10):
-        create_training_data(train_file, TRAIN_DATASETS)
-    test_datasets = [d for d in DATASETS if d not in TRAIN_DATASETS]
-    create_training_data(test_file, test_datasets)
+        np.random.seed(seed)
+        create_training_data(train_file, list(DATASETS.keys()))
     return
 
 
-def train_tree(train_file: str, test_file: str, target: str):
+def train_tree(train_file: str, target: str):
     graph_out = os.path.join(TRAIN_PATH, f'{target}_tree.png')
-    features = ['lfd-gmean', 'lfd-hmean', 'lfd-mean', 'cardinality-gmean',
-                'cardinality-hmean', 'cardinality-mean', 'radii-gmean', 'radii-hmean',
-                'radii-mean']
+    features = ['lfd-gmean', 'lfd-hmean', 'lfd-mean',
+                'cardinality-gmean', 'cardinality-hmean', 'cardinality-mean',
+                'radii-gmean', 'radii-hmean', 'radii-mean']
 
-    train_df = pd.read_csv(train_file)
+    df = pd.read_csv(train_file)
+
+    train_df = pd.concat([
+        df[df['dataset'].str.contains(dataset)]
+        for dataset in TRAIN_DATASETS
+    ])
     train_x = train_df[features]
     train_y = train_df[target]
 
-    test_df = pd.read_csv(test_file)
+    test_df = pd.concat([
+        df[df['dataset'].str.contains(dataset)]
+        for dataset in DATASETS
+        if dataset not in TRAIN_DATASETS
+    ])
     test_x = test_df[features]
     test_y = test_df[target]
 
     decision_tree = DecisionTreeRegressor(max_depth=3)
     decision_tree = decision_tree.fit(train_x, train_y)
     pred_y = decision_tree.predict(test_x)
-    print(f'{target} MSE: {mean_squared_error(test_y, pred_y):.3f}')
+
+    mse = mean_squared_error(test_y, pred_y)
+    print(f'{target} MSE: {mse:.3f}')
+    print(f'{target} RMSE: {np.sqrt(mse):.3f}')
 
     export = export_graphviz(decision_tree, out_file=None, feature_names=features)
     graph = pydotplus.graph_from_dot_data(export)
@@ -168,20 +182,19 @@ def train_tree(train_file: str, test_file: str, target: str):
     return
 
 
-def print_trees(train_file: str, test_file: str):
+def print_trees(train_file: str):
     targets = [
         'auc-cluster_cardinality',
         'auc-hierarchical',
         'auc-k_neighborhood',
         'auc-subgraph_cardinality',
     ]
-    [train_tree(train_file, test_file, target) for target in targets]
+    [train_tree(train_file, target) for target in targets]
     return
 
 
 if __name__ == '__main__':
     os.makedirs(TRAIN_PATH, exist_ok=True)
     _train_filename = os.path.join(TRAIN_PATH, 'train.csv')
-    _test_filename = os.path.join(TRAIN_PATH, 'test.csv')
-    # create_train_test_data(_train_filename, _test_filename)
-    print_trees(_train_filename, _test_filename)
+    # create_train_test_data(_train_filename)
+    print_trees(_train_filename)
