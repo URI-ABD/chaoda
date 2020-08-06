@@ -20,12 +20,12 @@ NORMALIZE = True
 SUB_SAMPLE = 100_000
 MAX_DEPTH = 50
 TRAIN_DATASETS = [
-    'annthyroid',
-    'cardio',
-    'pima',
+    'cover',
+    'mnist',
+    'musk',
+    'optdigits',
+    'satimage-2',
     'shuttle',
-    'thyroid',
-    'vowels',
 ]
 MEANS = {
     'gmean': gmean,  # uses log. getting log of zero error.
