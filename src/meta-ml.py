@@ -11,7 +11,7 @@ from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.tree import DecisionTreeRegressor, export_graphviz
 
 from src import datasets as chaoda_datasets
-from src.datasets import DATASETS
+from src.datasets import DATASETS, METRICS
 from src.methods import METHODS
 
 TRAIN_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'train'))
@@ -114,11 +114,22 @@ def create_training_data(filename: str, datasets: List[str]):
             fp.write(header)
 
     for dataset in datasets:
-        data, labels = chaoda_datasets.read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
-        min_points: int = 2 if len(data) < 2_000 else 4 if len(data) < 8_000 else 8 if len(data) < 32_000 else 16
-        for metric in ['euclidean', 'cityblock']:
+        data, labels = chaoda_datasets.read(dataset, normalize=NORMALIZE)
+        min_points: int
+        if len(data) < 1_000:
+            min_points = 1
+        elif len(data) < 4_000:
+            min_points = 2
+        elif len(data) < 16_000:
+            min_points = 4
+        elif len(data) < 64_000:
+            min_points = 8
+        else:
+            min_points = 16
+
+        for metric in METRICS.keys():
             logging.info(f'extracting features for {dataset}-{metric}')
-            manifold = Manifold(data, metric=metric).build(
+            manifold = Manifold(data, metric=METRICS[metric]).build(
                 criterion.MaxDepth(MAX_DEPTH),
                 criterion.MinPoints(min_points),
                 criterion.Depth(MAX_DEPTH),

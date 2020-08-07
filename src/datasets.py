@@ -59,6 +59,10 @@ def min_max_normalization(data):
             data[:, i] = 0.5
         else:
             data[:, i] = (data[:, i] - min_x) / (max_x - min_x)
+
+        # Make sure all values are positive
+        min_val = np.min(data[:, i])
+        data[:, i] = data[:, i] + min_val
     return data
 
 
