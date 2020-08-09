@@ -13,8 +13,7 @@ from sklearn.tree import DecisionTreeRegressor, export_graphviz
 from src import datasets as chaoda_datasets
 from src.datasets import DATASETS, METRICS
 from src.methods import METHODS
-
-TRAIN_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'train'))
+from src.utils import TRAIN_PATH
 
 NORMALIZE = True
 SUB_SAMPLE = 100_000
@@ -184,7 +183,7 @@ def train_tree(train_file: str, target: str):
 
     mse = mean_squared_error(test_y, pred_y)
     print(f'{target} MSE: {mse:.3f}')
-    print(f'{target} RMSE: {np.sqrt(mse):.3f}')
+    # print(f'{target} RMSE: {np.sqrt(mse):.3f}')
 
     export = export_graphviz(decision_tree, out_file=None, feature_names=features)
     graph = pydotplus.graph_from_dot_data(export)

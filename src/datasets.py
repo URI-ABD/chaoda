@@ -8,7 +8,7 @@ import numpy as np
 import scipy.io
 from scipy.io.matlab.miobase import MatReadError
 
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+from src.utils import DATA_PATH
 
 METRICS = {
     'cosine': 'cosine',
@@ -71,7 +71,7 @@ def get(dataset: str) -> None:
     if dataset not in DATASETS:
         raise ValueError(f'{dataset} given is not in datasets')
     
-    filename = os.path.join(DATA_DIR, f'{dataset}.mat')
+    filename = os.path.join(DATA_PATH, f'{dataset}.mat')
     if not os.path.exists(filename):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         run(['wget', DATASETS[dataset], '-O', filename])
@@ -84,7 +84,7 @@ def get(dataset: str) -> None:
 
 
 def read(dataset: str, normalize: bool = True, subsample: int = None):
-    filename = os.path.join(DATA_DIR, f'{dataset}.mat')
+    filename = os.path.join(DATA_PATH, f'{dataset}.mat')
     if not os.path.exists(filename):
         get(dataset)
         if not os.path.exists(filename):

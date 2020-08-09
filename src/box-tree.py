@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageFont
 from pyclam import Manifold, criterion, Cluster
 
 from src.datasets import read, DATASETS
-from src.reproduce import PLOTS_PATH
+from src.utils import PLOTS_PATH
 
 PLOTS_PATH = os.path.join(PLOTS_PATH, 'box-tree')
 
