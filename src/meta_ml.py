@@ -155,7 +155,6 @@ def create_train_test_data(train_file: str):
 
 
 def train_tree(train_file: str, target: str):
-    graph_out = os.path.join(TRAIN_PATH, f'{target}_tree.png')
     features = ['lfd-gmean', 'lfd-hmean', 'lfd-mean',
                 'cardinality-gmean', 'cardinality-hmean', 'cardinality-mean',
                 'radii-gmean', 'radii-hmean', 'radii-mean']
@@ -187,7 +186,7 @@ def train_tree(train_file: str, target: str):
 
     export = export_graphviz(decision_tree, out_file=None, feature_names=features)
     graph = pydotplus.graph_from_dot_data(export)
-    graph.write_png(graph_out)
+    graph.write_png(os.path.join(TRAIN_PATH, f'{target}_tree.png'))
 
     return
 
