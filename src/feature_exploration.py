@@ -51,7 +51,7 @@ def explore_features():
             manifold: Manifold = Manifold(data, METRICS[metric]).build(
                 criterion.MaxDepth(MAX_DEPTH),
                 criterion.MinPoints(min_points),
-                criterion.Depth(MAX_DEPTH),
+                criterion.Layer(MAX_DEPTH),
             )
 
             # extract features for every cluster in the tree

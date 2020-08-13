@@ -17,14 +17,14 @@ from src.utils import TRAIN_PATH
 
 NORMALIZE = True
 SUB_SAMPLE = 100_000
-MAX_DEPTH = 50
+MAX_DEPTH = 20
 TRAIN_DATASETS = [
-    'cover',
+    # 'cover',
     'mnist',
     'musk',
     'optdigits',
     'satimage-2',
-    'shuttle',
+    # 'shuttle',
 ]
 MEANS = {
     'gmean': gmean,  # uses log. getting log of zero error.
@@ -131,7 +131,7 @@ def create_training_data(filename: str, datasets: List[str]):
             manifold = Manifold(data, metric=METRICS[metric]).build(
                 criterion.MaxDepth(MAX_DEPTH),
                 criterion.MinPoints(min_points),
-                criterion.Depth(MAX_DEPTH),
+                criterion.Layer(MAX_DEPTH),
             )
             for layer in manifold.layers:
                 if layer.cardinality >= 32:
@@ -202,8 +202,42 @@ def print_trees(train_file: str):
     return
 
 
+def auc_from_clause():
+    for dataset in TRAIN_DATASETS:
+        data, labels = chaoda_datasets.read(dataset, normalize=NORMALIZE)
+        min_points: int
+        if len(data) < 1_000:
+            min_points = 1
+        elif len(data) < 4_000:
+            min_points = 2
+        elif len(data) < 16_000:
+            min_points = 4
+        elif len(data) < 64_000:
+            min_points = 8
+        else:
+            min_points = 16
+
+        clauses: List[criterion.Clause] = [
+            # criterion.Clause((0, np.inf), (0.37, np.inf), (0, 0.714)),
+            criterion.Clause((0, np.inf), (0, 0.37), (0, 0.784)),
+        ]
+
+        for metric in ['euclidean', 'manhattan']:
+            logging.info(f'testing clause for {dataset}-{metric}')
+            manifold: Manifold = Manifold(data, METRICS[metric]).build(
+                criterion.MaxDepth(MAX_DEPTH),
+                criterion.MinPoints(min_points),
+                criterion.SelectionClauses(clauses),
+            )
+            scores = auc_scores(manifold.graph, labels)
+            [logging.info(f'{dataset}-{metric}-{method}-{score:.3f}')
+             for method, score in zip(METHODS.keys(), scores)]
+    return
+
+
 if __name__ == '__main__':
     os.makedirs(TRAIN_PATH, exist_ok=True)
     _train_filename = os.path.join(TRAIN_PATH, 'train.csv')
     # create_train_test_data(_train_filename)
-    print_trees(_train_filename)
+    # print_trees(_train_filename)
+    auc_from_clause()
