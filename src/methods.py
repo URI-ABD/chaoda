@@ -166,3 +166,4 @@ METHODS = {
 }
 
 # TODO: Print graphs in dot format and visualize them
+# TODO: 1 / depth as proxy of anomalousness
