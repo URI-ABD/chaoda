@@ -10,6 +10,7 @@ from sklearn.svm import OneClassSVM
 
 from src.datasets import get, read, DATASETS, METRICS
 from src.methods import METHODS
+from src.utils import BUILD_PATH, AUC_PATH, LFD_PATH, PLOTS_PATH
 
 PAPERS = {
     'SVM sklearn': {
@@ -170,10 +171,6 @@ NORMALIZE = False
 SUB_SAMPLE = 5_000  # Set this to None to not subsample large datasets
 MAX_DEPTH = 20
 PERCENTILES = list(range(0, 101, 10))
-BUILD_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
-PLOTS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plots'))
-AUC_PATH = os.path.join(PLOTS_PATH, 'auc_vs_depth')
-LFD_PATH = os.path.join(PLOTS_PATH, 'lfd_vs_depth')
 
 
 def _manifold_path(dataset, metric, min_points) -> str:
@@ -217,17 +214,6 @@ def build_manifolds():
                 with open(filepath, 'rb') as fp:
                     logging.info(f'loading manifold {filepath}')
                     manifold = manifold.load(fp, data)
-                temp_depth = manifold.depth
-                manifold.build_tree(
-                    criterion.MaxDepth(MAX_DEPTH),
-                    criterion.MinPoints(min_points),
-                )
-                if manifold.depth > temp_depth:
-                    manifold.build_graphs()
-                    # save manifold
-                    with open(filepath, 'wb') as fp:
-                        logging.info(f'dumping manifold {filepath}')
-                        manifold.dump(fp)
             else:
                 # build manifold from scratch
                 manifold.build(
@@ -246,7 +232,7 @@ def build_manifolds():
                     if method in {'n_points_in_ball', 'k_nearest'} and depth < manifold.depth:
                         continue
 
-                    anomalies = METHODS[method](manifold.graphs[depth])
+                    anomalies = METHODS[method](manifold.layers[depth])
                     y_true, y_score = list(), list()
                     [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
                     auc = roc_auc_score(y_true, y_score)
@@ -255,11 +241,11 @@ def build_manifolds():
             # get LFDs
             percentiles = list(range(0, 101, 10))
             lfds = np.zeros(shape=(manifold.depth + 1, len(percentiles)))
-            for graph in manifold.graphs:
-                candidates = [cluster.local_fractal_dimension for cluster in graph.clusters if cluster.cardinality > 2]
+            for layer in manifold.layers:
+                candidates = [cluster.local_fractal_dimension for cluster in layer.clusters if cluster.cardinality > 2]
                 if len(candidates) == 0:
                     candidates = [0.]
-                lfds[graph.depth] = np.percentile(candidates, percentiles)
+                lfds[layer.depth] = np.percentile(candidates, percentiles)
             lfds_dict[dataset][metric] = lfds.T
 
         # Run OneClassSVM on each dataset

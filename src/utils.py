@@ -1,5 +1,13 @@
 import os
 
+BUILD_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
+DATA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+PLOTS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plots'))
+TRAIN_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'train'))
+
+AUC_PATH = os.path.join(PLOTS_PATH, 'auc_vs_depth')
+LFD_PATH = os.path.join(PLOTS_PATH, 'lfd_vs_depth')
+
 
 def make_folders(dataset, metric, method):
     dir_paths = [f'../data',
@@ -16,7 +24,7 @@ def make_folders(dataset, metric, method):
 def manifold_path(dataset, metric, min_points, graph_ratio) -> str:
     """ Generate proper path to manifold. """
     return os.path.join(
-        LOG_DIR,
+        BUILD_PATH,
         ':'.join(map(str, [dataset, metric, min_points, f'{graph_ratio}.pickle']))
     )
 

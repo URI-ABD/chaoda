@@ -4,8 +4,10 @@ from typing import Dict, Tuple, List
 
 import numpy as np
 from pyclam import Manifold, criterion
-from methods import METHODS
-from plot import roc_curve, PLOT_DIR
+
+from src.methods import METHODS
+from src.plot import roc_curve
+from src.utils import PLOTS_PATH
 
 np.random.seed(42)
 
@@ -161,9 +163,10 @@ def explore_greengenes():
     with open(filename, 'wb') as fp:
         manifold.dump(fp)
 
-    log_file = os.path.join(PLOT_DIR, dataset)
+    log_file = os.path.join(PLOTS_PATH, dataset)
     os.makedirs(log_file, exist_ok=True)
     log_file = os.path.join(log_file, 'roc_scores.log')
+    # noinspection PyArgumentList
     logging.basicConfig(
         filename=log_file,
         filemode='w',
@@ -176,7 +179,7 @@ def explore_greengenes():
         for depth in range(0, manifold.depth + 1):
             auc = roc_curve(
                 true_labels=labels,
-                anomalies=METHODS[method](manifold.graphs[depth]),
+                anomalies=METHODS[method](manifold.layers[depth]),
                 dataset=dataset,
                 metric='hamming',
                 method=method,

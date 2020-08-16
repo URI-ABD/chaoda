@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageFont
 from pyclam import Manifold, criterion, Cluster
 
 from src.datasets import read, DATASETS
-from src.reproduce import PLOTS_PATH
+from src.utils import PLOTS_PATH
 
 PLOTS_PATH = os.path.join(PLOTS_PATH, 'box-tree')
 
@@ -152,8 +152,8 @@ def draw_tree(
 
 if __name__ == '__main__':
     os.makedirs(PLOTS_PATH, exist_ok=True)
-    _datasets = list(DATASETS.keys())[:1]
-    # _datasets = list(DATASETS.keys())
+    # _datasets = list(DATASETS.keys())[:1]
+    _datasets = list(DATASETS.keys())
     _width_modes = list(_WIDTH_MODES.keys())
     _color_modes = list(_COLOR_MODES.keys())
     [draw_tree(dataset=_d, width_modes=_width_modes, color_modes=_color_modes) for _d in _datasets]

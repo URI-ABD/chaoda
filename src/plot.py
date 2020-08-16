@@ -8,11 +8,11 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn import metrics
 
-PLOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plots'))
+from src.utils import PLOTS_PATH
 
 
 def _directory(dataset, metric, method):
-    return os.path.join(PLOT_DIR, dataset, metric, method)
+    return os.path.join(PLOTS_PATH, dataset, metric, method)
 
 
 def histogram(
@@ -23,6 +23,7 @@ def histogram(
         depth: int,
         save: bool,
 ):
+    """ Histogram of anomalousness values. """
     plt.clf()
     fig = plt.figure()
     n, bins, patches = plt.hist(x=x, bins=100, color='#0504aa', alpha=0.7, rwidth=0.85)
@@ -40,6 +41,7 @@ def histogram(
 
 
 def roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
+    """ Plot roc-curve from labels and anomalousness values. """
     y_true, y_score = [], []
     [(y_true.append(true_labels[k]), y_score.append(v)) for k, v in anomalies.items()]
     fpr, tpr, _ = metrics.roc_curve(y_true, y_score)
@@ -77,6 +79,7 @@ def roc_curve(true_labels, anomalies, dataset, metric, method, depth, save):
 
 
 def scatter(data: np.ndarray, labels: List[int], name: str):
+    """ Scatter plot of 2d or 3d data. """
     plt.clf()
     fig = plt.figure(figsize=(6, 6), dpi=300)
     if data.shape[1] == 2:
@@ -105,6 +108,14 @@ def embed_umap(
         metric: str,
         filename: str,
 ) -> np.ndarray:
+    """ UMAP embedding of data.
+
+    :param data: data that is to be embedded.
+    :param n_neighbors: number of neighbors for UMAP reduction. lower numbers emphasize local structure.
+    :param n_components: n components will create an n-dimensional embedding.
+    :param metric: distance function to use for data.
+    :param filename: name for file to which the umap embedding will be saved as a numpy .
+    """
     if not os.path.exists(filename):
         embedding: np.ndarray = umap.UMAP(
             n_neighbors=n_neighbors,
@@ -177,7 +188,6 @@ def plot_3d(
 
 RESULT_PLOTS = {
     'roc_curve': roc_curve,
-    # 'confusion_matrix': confusion_matrix,
 }
 
 DATA_PLOTS = {
