@@ -7,6 +7,7 @@ import pandas as pd
 import pydotplus
 from pyclam import Manifold, criterion, Graph
 from scipy.stats import gmean, hmean
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.tree import DecisionTreeRegressor, export_graphviz
 
@@ -184,7 +185,7 @@ def train_trees(train_file: str):
         train_y = train_df[target]
         test_y = test_df[target]
 
-        model = regression_tree(train_x, train_y, export=True, feature_names=features, target=target)
+        model = linear_regression(train_x, train_y, export='text', feature_names=features, target=target)
 
         pred_y = model.predict(test_x)
         mse = mean_squared_error(test_y, pred_y)
@@ -193,14 +194,30 @@ def train_trees(train_file: str):
     return
 
 
-def regression_tree(train_x: np.ndarray, train_y: np.ndarray, *, export: bool = False, feature_names: List[str] = None, target: str = None):
+def regression_tree(train_x: np.ndarray, train_y: np.ndarray, *, export: str = None, feature_names: List[str] = None, target: str = None):
     decision_tree = DecisionTreeRegressor(max_depth=3)
     decision_tree = decision_tree.fit(train_x, train_y)
     if export:
-        export = export_graphviz(decision_tree, out_file=None, feature_names=feature_names)
-        graph = pydotplus.graph_from_dot_data(export)
-        graph.write_png(os.path.join(TRAIN_PATH, f'{target}_tree.png'))
+        if export == 'graphviz':
+            export = export_graphviz(decision_tree, out_file=None, feature_names=feature_names)
+            graph = pydotplus.graph_from_dot_data(export)
+            graph.write_png(os.path.join(TRAIN_PATH, f'{target}_tree.png'))
+        else:
+            pass
     return decision_tree
+
+
+def linear_regression(train_x: np.ndarray, train_y: np.ndarray, *, export: str = None, feature_names: List[str] = None, target: str = None):
+    model = LinearRegression()
+    model = model.fit(train_x, train_y)
+    if export:
+        filename = os.path.join(TRAIN_PATH, f'{target}_linear_regression.csv')
+        with open(filename, 'w') as fp:
+            header = ','.join(feature_names)
+            line = ','.join([f'{coefficient:.3f}' for coefficient in model.coef_])
+            fp.write(f'{header}\n')
+            fp.write(f'{line}\n')
+    return model
 
 
 def auc_from_clause():
