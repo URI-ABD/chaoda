@@ -154,10 +154,16 @@ def create_train_test_data(train_file: str):
     return
 
 
-def train_tree(train_file: str, target: str):
+def train_trees(train_file: str):
     features = ['lfd-gmean', 'lfd-hmean', 'lfd-mean',
                 'cardinality-gmean', 'cardinality-hmean', 'cardinality-mean',
                 'radii-gmean', 'radii-hmean', 'radii-mean']
+    targets = [
+        'auc-cluster_cardinality',
+        'auc-hierarchical',
+        'auc-k_neighborhood',
+        'auc-subgraph_cardinality',
+    ]
 
     df = pd.read_csv(train_file)
 
@@ -166,7 +172,6 @@ def train_tree(train_file: str, target: str):
         for dataset in TRAIN_DATASETS
     ])
     train_x = train_df[features]
-    train_y = train_df[target]
 
     test_df = pd.concat([
         df[df['dataset'].str.contains(dataset)]
@@ -174,32 +179,28 @@ def train_tree(train_file: str, target: str):
         if dataset not in TRAIN_DATASETS
     ])
     test_x = test_df[features]
-    test_y = test_df[target]
 
+    for target in targets:
+        train_y = train_df[target]
+        test_y = test_df[target]
+
+        model = regression_tree(train_x, train_y, export=True, feature_names=features, target=target)
+
+        pred_y = model.predict(test_x)
+        mse = mean_squared_error(test_y, pred_y)
+        print(f'{target} MSE: {mse:.3f}')
+        # print(f'{target} RMSE: {np.sqrt(mse):.3f}')
+    return
+
+
+def regression_tree(train_x: np.ndarray, train_y: np.ndarray, *, export: bool = False, feature_names: List[str] = None, target: str = None):
     decision_tree = DecisionTreeRegressor(max_depth=3)
     decision_tree = decision_tree.fit(train_x, train_y)
-    pred_y = decision_tree.predict(test_x)
-
-    mse = mean_squared_error(test_y, pred_y)
-    print(f'{target} MSE: {mse:.3f}')
-    # print(f'{target} RMSE: {np.sqrt(mse):.3f}')
-
-    export = export_graphviz(decision_tree, out_file=None, feature_names=features)
-    graph = pydotplus.graph_from_dot_data(export)
-    graph.write_png(os.path.join(TRAIN_PATH, f'{target}_tree.png'))
-
-    return
-
-
-def print_trees(train_file: str):
-    targets = [
-        'auc-cluster_cardinality',
-        'auc-hierarchical',
-        'auc-k_neighborhood',
-        'auc-subgraph_cardinality',
-    ]
-    [train_tree(train_file, target) for target in targets]
-    return
+    if export:
+        export = export_graphviz(decision_tree, out_file=None, feature_names=feature_names)
+        graph = pydotplus.graph_from_dot_data(export)
+        graph.write_png(os.path.join(TRAIN_PATH, f'{target}_tree.png'))
+    return decision_tree
 
 
 def auc_from_clause():
@@ -247,5 +248,5 @@ if __name__ == '__main__':
     os.makedirs(TRAIN_PATH, exist_ok=True)
     _train_filename = os.path.join(TRAIN_PATH, 'train.csv')
     # create_train_test_data(_train_filename)
-    # print_trees(_train_filename)
-    auc_from_clause()
+    train_trees(_train_filename)
+    # auc_from_clause()
