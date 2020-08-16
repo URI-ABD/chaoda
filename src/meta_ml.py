@@ -203,7 +203,12 @@ def print_trees(train_file: str):
 
 
 def auc_from_clause():
-    for dataset in TRAIN_DATASETS:
+    filename = os.path.join(TRAIN_PATH, f'auc_clauses.csv')
+    with open(filename, 'w') as fp:
+        header = ','.join(['dataset', 'metric', 'method'] + list(METHODS.keys()))
+        fp.write(f'{header}\n')
+
+    for dataset in DATASETS.keys():
         data, labels = chaoda_datasets.read(dataset, normalize=NORMALIZE)
         min_points: int
         if len(data) < 1_000:
@@ -212,14 +217,16 @@ def auc_from_clause():
             min_points = 2
         elif len(data) < 16_000:
             min_points = 4
-        elif len(data) < 64_000:
-            min_points = 8
+        # elif len(data) < 64_000:
+        #     min_points = 8
         else:
-            min_points = 16
+            # min_points = 16
+            continue
 
         clauses: List[criterion.Clause] = [
-            # criterion.Clause((0, np.inf), (0.37, np.inf), (0, 0.714)),
-            criterion.Clause((0, np.inf), (0, 0.37), (0, 0.784)),
+            criterion.Clause((0.87, np.inf), (0.229, 0.372), (0, np.inf)),  # CC
+            # criterion.Clause((0, np.inf), (0, 0.37), (0, 0.784)),  # PC
+            # criterion.Clause((0, np.inf), (0.371, np.inf), (0, 0.691)),  # KN, SC
         ]
 
         for metric in ['euclidean', 'manhattan']:
@@ -230,8 +237,9 @@ def auc_from_clause():
                 criterion.SelectionClauses(clauses),
             )
             scores = auc_scores(manifold.graph, labels)
-            [logging.info(f'{dataset}-{metric}-{method}-{score:.3f}')
-             for method, score in zip(METHODS.keys(), scores)]
+            scores = ','.join([f'{score:.3f}' for score in scores])
+            with open(filename, 'a') as fp:
+                fp.write(f'{dataset},{metric},{scores}\n')
     return
 
 
