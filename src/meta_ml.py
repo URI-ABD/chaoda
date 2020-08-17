@@ -20,12 +20,21 @@ NORMALIZE = True
 SUB_SAMPLE = 100_000
 MAX_DEPTH = 20
 TRAIN_DATASETS = [
-    # 'cover',
+    'annthyroid',
+    'cardio',
+    'cover',
+    'http',
+    'mammography',
     'mnist',
     'musk',
     'optdigits',
+    'pendigits',
+    'satellite',
     'satimage-2',
-    # 'shuttle',
+    'shuttle',
+    'smtp',
+    'thyroid',
+    'vowels',
 ]
 MEANS = {
     'gmean': gmean,  # uses log. getting log of zero error.
@@ -165,19 +174,21 @@ def train_trees(train_file: str):
         'auc-k_neighborhood',
         'auc-subgraph_cardinality',
     ]
+    train_datasets = list(sorted(np.random.choice(TRAIN_DATASETS, 8, replace=False)))
+    print(train_datasets)
 
     df = pd.read_csv(train_file)
 
     train_df = pd.concat([
         df[df['dataset'].str.contains(dataset)]
-        for dataset in TRAIN_DATASETS
+        for dataset in train_datasets
     ])
     train_x = train_df[features]
 
     test_df = pd.concat([
         df[df['dataset'].str.contains(dataset)]
         for dataset in DATASETS
-        if dataset not in TRAIN_DATASETS
+        if dataset not in train_datasets
     ])
     test_x = test_df[features]
 
@@ -211,12 +222,14 @@ def linear_regression(train_x: np.ndarray, train_y: np.ndarray, *, export: str =
     model = LinearRegression()
     model = model.fit(train_x, train_y)
     if export:
-        filename = os.path.join(TRAIN_PATH, f'{target}_linear_regression.csv')
-        with open(filename, 'w') as fp:
-            header = ','.join(feature_names)
+        filename = os.path.join(TRAIN_PATH, f'linear_regression.csv')
+        if not os.path.exists(filename):
+            with open(filename, 'w') as fp:
+                header = ','.join(feature_names)
+                fp.write(f'method,{header}\n')
+        with open(filename, 'a') as fp:
             line = ','.join([f'{coefficient:.3f}' for coefficient in model.coef_])
-            fp.write(f'{header}\n')
-            fp.write(f'{line}\n')
+            fp.write(f'{target},{line}\n')
     return model
 
 
@@ -262,6 +275,7 @@ def auc_from_clause():
 
 
 if __name__ == '__main__':
+    np.random.seed(42)
     os.makedirs(TRAIN_PATH, exist_ok=True)
     _train_filename = os.path.join(TRAIN_PATH, 'train.csv')
     # create_train_test_data(_train_filename)
