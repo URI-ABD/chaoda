@@ -1,7 +1,8 @@
 import os
-import numpy as np
+from typing import List
 
-from pyclam import Manifold, Graph, Cluster
+import numpy as np
+from pyclam import Manifold, Cluster, criterion
 
 from src import datasets
 
@@ -24,27 +25,35 @@ def main(dataset: str, constants: np.array):
     """Do things.
 
     :param dataset: the dataset to work on, duh
-    :oaram constants: the things Najib gives me.
+    :param constants: the things Najib gives me.
     """
     dataset, labels = datasets.read(dataset)
-    manifold = Manifold(dataset, 'euclidean')
-    manifold.build()
+    manifold = Manifold(dataset, 'euclidean').build(
+        criterion.MaxDepth(20),
+        criterion.Layer(10),
+    )
+
+    manifold.root.ratios = np.ones(shape=(len(constants) // 2,), dtype=float)
     for layer in manifold.layers[1:]:
         clusters: List[Cluster] = [c for c in layer.clusters if c.depth == layer.depth]
-        for c in clusters:
+        for cluster in clusters:
             # Add features here as they are needed.
-            c._chaoda_features = np.array([
-                # Child/Parent Ratio: Fractal Dimension
-                c.local_fractal_dimension / c.parent.local_fractal_dimension,
-                # Exponential Moving Average: Fractal Dimension
-                ema(c.local_fractal_dimension, c.parent.local_fractal_dimension),
-                # Child/Parent Ratio: 
+            cluster.ratios = np.array([  # Child/Parent Ratios
+                cluster.local_fractal_dimension / cluster.parent.local_fractal_dimension,  # local fractal dimension
+                cluster.cardinality / cluster.parent.cardinality,  # cardinality
+                max(cluster.radius, 1e-16) / max(cluster.parent.radius, 1e-16)  # radius
+            ])
+            cluster.ema_ratios = np.array([  # Exponential Moving Averages
+                ema(c, p) for c, p in zip(cluster.ratios, cluster.parent.ratios)
             ])
             # Here we compute the AUC
-            c._chaoda_auc = np.dot(constants, c._chaoda_features)
+            chaoda_features = np.concatenate([cluster.ratios, cluster.ema_ratios])
+            cluster.chaoda_auc = np.dot(constants, chaoda_features)
+
+    return
 
 
 if __name__ == "__main__":
-    constants = np.array([1, 2, 3]) # np.fromfile(CONSTANTS, dtype=np.float)
-    for dataset in DATASETS:
-        main(dataset, constants)
+    _constants = np.array([1, 2, 3, 4, 5, 6])  # np.fromfile(CONSTANTS, dtype=np.float)
+    for _dataset in DATASETS:
+        main(_dataset, _constants)
