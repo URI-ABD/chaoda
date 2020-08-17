@@ -6,13 +6,13 @@ import numpy as np
 import pandas as pd
 import pydotplus
 from pyclam import Manifold, criterion, Graph
-from scipy.stats import gmean, hmean
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.tree import DecisionTreeRegressor, export_graphviz
 
 from src import datasets as chaoda_datasets
 from src.datasets import DATASETS, METRICS
+from src.glm_incorporation import ema
 from src.methods import METHODS
 from src.utils import TRAIN_PATH
 
@@ -36,70 +36,17 @@ TRAIN_DATASETS = [
     'thyroid',
     'vowels',
 ]
-MEANS = {
-    'gmean': gmean,  # uses log. getting log of zero error.
-    'hmean': hmean,
-    'mean': np.mean,
+FEATURE_NAMES = [
+    'lfd',
+    'cardinality',
+    'radius',
+]
+METHOD_NAMES = {
+    'cluster_cardinality': 'CC',
+    'hierarchical': 'PC',
+    'k_neighborhood': 'KN',
+    'subgraph_cardinality': 'SC',
 }
-
-# TODO: Normalize features to account for different ranges of lfd, radii, size of dataset, etc
-
-
-def lfd_features(graph: Graph) -> List[float]:
-    lfds = [cluster.local_fractal_dimension / cluster.parent.local_fractal_dimension for cluster in graph.clusters]
-    means = [mean(lfds) for mean in MEANS.values()]
-    return list(map(float, means))
-
-
-def cardinality_features(graph: Graph) -> List[float]:
-    cardinalities = [cluster.cardinality / cluster.parent.cardinality for cluster in graph.clusters]
-    means = [mean(cardinalities) for mean in MEANS.values()]
-    return list(map(float, means))
-
-
-def radii_features(graph: Graph) -> List[float]:
-    radii = [
-        (cluster.radius if cluster.radius > 0 else 1e-4)
-        / (cluster.parent.radius if cluster.parent.radius > 0 else 1e-4)
-        for cluster in graph.clusters
-    ]
-    means = [mean(radii) for mean in MEANS.values()]
-    return list(map(float, means))
-
-
-def subgraph_cardinality_features(graph: Graph) -> List[float]:
-    cardinalities = [subgraph.cardinality for subgraph in graph.subgraphs]
-    factor = sum(cardinalities)
-    cardinalities = [c / factor for c in cardinalities]
-    means = [mean(cardinalities) for mean in MEANS.values()]
-    return list(map(float, means))
-
-
-def subgraph_population_features(graph: Graph) -> List[float]:
-    factor = graph.manifold.root.cardinality
-    populations = [subgraph.population / factor for subgraph in graph.subgraphs]
-    means = [mean(populations) for mean in MEANS.values()]
-    return list(map(float, means))
-
-
-# TODO: Subgraph diameter
-# TODO: Subgraph centrality
-# TODO: Think of other features to extract
-
-
-FEATURE_EXTRACTORS = {
-    'lfd': lfd_features,
-    'cardinality': cardinality_features,
-    'radii': radii_features,
-    # 'subgraph-cardinalities': subgraph_cardinality_features,
-    # 'subgraph-populations': subgraph_population_features,
-}
-
-
-def create_features(graph: Graph) -> List[float]:
-    features: List[float] = list()
-    [features.extend(extractor(graph)) for extractor in FEATURE_EXTRACTORS.values()]
-    return features
 
 
 def auc_scores(graph: Graph, labels: List[int]) -> List[float]:
@@ -114,8 +61,11 @@ def auc_scores(graph: Graph, labels: List[int]) -> List[float]:
 
 
 def create_training_data(filename: str, datasets: List[str]):
-    feature_names = ','.join([f'{extractor}-{mean}' for extractor in FEATURE_EXTRACTORS for mean in MEANS])
-    labels = ','.join([f'auc-{method}' for method in METHODS])
+    feature_names = ','.join(FEATURE_NAMES)
+    ema_names = ','.join([f'{name}_ema' for name in FEATURE_NAMES])
+    feature_names = f'{feature_names},{ema_names}'
+
+    labels = ','.join([f'{METHOD_NAMES[method]}' for method in METHODS])
     header = f'dataset,metric,depth,{labels},{feature_names}\n'
 
     if not os.path.exists(filename):
@@ -127,32 +77,51 @@ def create_training_data(filename: str, datasets: List[str]):
         min_points: int
         if len(data) < 1_000:
             min_points = 1
+            # continue
         elif len(data) < 4_000:
             min_points = 2
         elif len(data) < 16_000:
             min_points = 4
         elif len(data) < 64_000:
             min_points = 8
+            # continue
         else:
             min_points = 16
+            # continue
 
-        for metric in METRICS.keys():
-            logging.info(f'extracting features for {dataset}-{metric}')
+        for metric in ['euclidean', 'manhattan']:
             manifold = Manifold(data, metric=METRICS[metric]).build(
                 criterion.MaxDepth(MAX_DEPTH),
                 criterion.MinPoints(min_points),
                 criterion.Layer(MAX_DEPTH),
             )
-            for layer in manifold.layers:
-                if layer.cardinality >= 32:
-                    logging.info(f'writing layer {layer.depth}...')
-                    features = create_features(layer)
-                    scores = auc_scores(layer, labels)
-                    features_line = ','.join([f'{f:.8f}' for f in features])
-                    scores_line = ','.join([f'{f:.8f}' for f in scores])
 
-                    with open(filename, 'a') as fp:
-                        fp.write(f'{dataset},{metric},{layer.depth},{scores_line},{features_line}\n')
+            logging.info(f'extracting features for {dataset}-{metric}')
+            manifold.root.ratios = np.ones(shape=(3,), dtype=float)
+            for layer in manifold.layers[1:]:
+                for cluster in layer.clusters:
+                    cluster.ratios = np.array([  # Child/Parent Ratios
+                        cluster.local_fractal_dimension / cluster.parent.local_fractal_dimension,  # local fractal dimension
+                        cluster.cardinality / cluster.parent.cardinality,  # cardinality
+                        max(cluster.radius, 1e-16) / max(cluster.parent.radius, 1e-16)  # radius
+                    ])
+                    # noinspection PyUnresolvedReferences
+                    cluster.ema_ratios = np.array([  # Exponential Moving Averages
+                        ema(c, p) for c, p in zip(cluster.ratios, cluster.parent.ratios)
+                    ])
+
+                logging.info(f'writing layer {layer.depth}...')
+                features = np.stack([
+                    np.concatenate([cluster.ratios, cluster.ema_ratios])
+                    for cluster in layer.clusters
+                ])
+                features = list(np.mean(features, axis=0))
+                scores = auc_scores(layer, labels)
+                features_line = ','.join([f'{f:.8f}' for f in features])
+                scores_line = ','.join([f'{f:.8f}' for f in scores])
+
+                with open(filename, 'a') as fp:
+                    fp.write(f'{dataset},{metric},{layer.depth},{scores_line},{features_line}\n')
             # break
     return
 
@@ -165,15 +134,8 @@ def create_train_test_data(train_file: str):
 
 
 def train_trees(train_file: str):
-    features = ['lfd-gmean', 'lfd-hmean', 'lfd-mean',
-                'cardinality-gmean', 'cardinality-hmean', 'cardinality-mean',
-                'radii-gmean', 'radii-hmean', 'radii-mean']
-    targets = [
-        'auc-cluster_cardinality',
-        'auc-hierarchical',
-        'auc-k_neighborhood',
-        'auc-subgraph_cardinality',
-    ]
+    features = FEATURE_NAMES + [f'{name}_ema' for name in FEATURE_NAMES]
+    targets = list(METHOD_NAMES.values())
     train_datasets = list(sorted(np.random.choice(TRAIN_DATASETS, 8, replace=False)))
     print(train_datasets)
 
@@ -278,6 +240,6 @@ if __name__ == '__main__':
     np.random.seed(42)
     os.makedirs(TRAIN_PATH, exist_ok=True)
     _train_filename = os.path.join(TRAIN_PATH, 'train.csv')
-    # create_train_test_data(_train_filename)
-    train_trees(_train_filename)
+    create_train_test_data(_train_filename)
+    # train_trees(_train_filename)
     # auc_from_clause()
