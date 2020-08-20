@@ -1,19 +1,19 @@
 import logging
 import os
-from typing import List, Dict
+from typing import List
 
 import numpy as np
 import pandas as pd
 import pydotplus
-from pyclam import Manifold, criterion, Graph
+from pyclam import Manifold, criterion
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import roc_auc_score, mean_squared_error
+from sklearn.metrics import mean_squared_error
 from sklearn.tree import DecisionTreeRegressor, export_graphviz
 
 from src import datasets as chaoda_datasets
 from src.datasets import DATASETS, METRICS
-from src.glm_incorporation import calculate_ratios
-from src.methods import METHODS
+from src.glm_incorporation import calculate_ratios, auc_scores
+from src.methods import METHODS, METHOD_NAMES
 from src.utils import TRAIN_PATH
 
 NORMALIZE = True
@@ -41,23 +41,6 @@ FEATURE_NAMES = [
     'cardinality',
     'radius',
 ]
-METHOD_NAMES = {
-    'cluster_cardinality': 'CC',
-    'hierarchical': 'PC',
-    'k_neighborhood': 'KN',
-    'subgraph_cardinality': 'SC',
-}
-
-
-def auc_scores(graph: Graph, labels: List[int]) -> List[float]:
-    scores: List[float] = list()
-    for method in METHODS:
-        anomalies: Dict[int, float] = METHODS[method](graph)
-        y_true, y_score = list(), list()
-        [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
-        scores.append(roc_auc_score(y_true, y_score))
-
-    return scores
 
 
 def create_training_data(filename: str, datasets: List[str]):
@@ -125,7 +108,7 @@ def create_train_test_data(train_file: str):
     return
 
 
-def train_trees(train_file: str):
+def train_meta_model(train_file: str, meta_model: str):
     features = FEATURE_NAMES + [f'{name}_ema' for name in FEATURE_NAMES]
     targets = list(METHOD_NAMES.values())
     train_datasets = list(sorted(np.random.choice(TRAIN_DATASETS, 8, replace=False)))
@@ -150,7 +133,12 @@ def train_trees(train_file: str):
         train_y = train_df[target]
         test_y = test_df[target]
 
-        model = linear_regression(train_x, train_y, export='text', feature_names=features, target=target)
+        if meta_model == 'linear_regression':
+            model = linear_regression(train_x, train_y, export='text', feature_names=features, target=target)
+        elif meta_model == 'regression_tree':
+            model = regression_tree(train_x, train_y, export='graphviz', feature_names=features, target=target)
+        else:
+            raise ValueError(f'{meta_model} not implemented')
 
         pred_y = model.predict(test_x)
         mse = mean_squared_error(test_y, pred_y)
@@ -232,6 +220,6 @@ if __name__ == '__main__':
     np.random.seed(42)
     os.makedirs(TRAIN_PATH, exist_ok=True)
     _train_filename = os.path.join(TRAIN_PATH, 'train.csv')
-    create_train_test_data(_train_filename)
-    # train_trees(_train_filename)
+    # create_train_test_data(_train_filename)
+    train_meta_model(_train_filename, 'linear_regression')
     # auc_from_clause()
