@@ -165,5 +165,12 @@ METHODS = {
     'subgraph_cardinality': subgraph_cardinality_anomalies,
 }
 
+METHOD_NAMES = {
+    'cluster_cardinality': 'CC',
+    'hierarchical': 'PC',
+    'k_neighborhood': 'KN',
+    'subgraph_cardinality': 'SC',
+}
+
 # TODO: Print graphs in dot format and visualize them
 # TODO: 1 / depth as proxy of anomalousness
