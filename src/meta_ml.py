@@ -12,7 +12,7 @@ from sklearn.tree import DecisionTreeRegressor, export_graphviz
 
 from src import datasets as chaoda_datasets
 from src.datasets import DATASETS, METRICS
-from src.glm_incorporation import ema
+from src.glm_incorporation import calculate_ratios
 from src.methods import METHODS
 from src.utils import TRAIN_PATH
 
@@ -99,18 +99,10 @@ def create_training_data(filename: str, datasets: List[str]):
             logging.info(f'extracting features for {dataset}-{metric}')
             manifold.root.ratios = np.ones(shape=(3,), dtype=float)
             for layer in manifold.layers[1:]:
-                for cluster in layer.clusters:
-                    cluster.ratios = np.array([  # Child/Parent Ratios
-                        cluster.local_fractal_dimension / cluster.parent.local_fractal_dimension,  # local fractal dimension
-                        cluster.cardinality / cluster.parent.cardinality,  # cardinality
-                        max(cluster.radius, 1e-16) / max(cluster.parent.radius, 1e-16)  # radius
-                    ])
-                    # noinspection PyUnresolvedReferences
-                    cluster.ema_ratios = np.array([  # Exponential Moving Averages
-                        ema(c, p) for c, p in zip(cluster.ratios, cluster.parent.ratios)
-                    ])
+                [calculate_ratios(cluster) for cluster in layer.clusters]
 
                 logging.info(f'writing layer {layer.depth}...')
+                # noinspection PyUnresolvedReferences
                 features = np.stack([
                     np.concatenate([cluster.ratios, cluster.ema_ratios])
                     for cluster in layer.clusters
