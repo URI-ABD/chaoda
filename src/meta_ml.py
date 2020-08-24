@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pydotplus
 from pyclam import Manifold, criterion
+from scipy.stats import gmean, hmean
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.tree import DecisionTreeRegressor, export_graphviz
@@ -46,7 +47,9 @@ FEATURE_NAMES = [
 def create_training_data(filename: str, datasets: List[str]):
     feature_names = ','.join(FEATURE_NAMES)
     ema_names = ','.join([f'{name}_ema' for name in FEATURE_NAMES])
-    feature_names = f'{feature_names},{ema_names}'
+    feature_names = list(f'{feature_names},{ema_names}'.split(','))
+    feature_names = [f'{name}_amean' for name in feature_names] + [f'{name}_gmean' for name in feature_names] + [f'{name}_hmean' for name in feature_names]
+    feature_names = ','.join(feature_names)
 
     labels = ','.join([f'{METHOD_NAMES[method]}' for method in METHODS])
     header = f'dataset,metric,depth,{labels},{feature_names}\n'
@@ -90,19 +93,19 @@ def create_training_data(filename: str, datasets: List[str]):
                     np.concatenate([cluster.ratios, cluster.ema_ratios])
                     for cluster in layer.clusters
                 ])
-                features = list(np.mean(features, axis=0))
-                scores = auc_scores(layer, labels)
+                features = list(np.mean(features, axis=0)) + list(gmean(features, axis=0)) + list(hmean(features, axis=0))
                 features_line = ','.join([f'{f:.8f}' for f in features])
+
+                scores = auc_scores(layer, labels)
                 scores_line = ','.join([f'{f:.8f}' for f in scores])
 
                 with open(filename, 'a') as fp:
                     fp.write(f'{dataset},{metric},{layer.depth},{scores_line},{features_line}\n')
-            # break
     return
 
 
 def create_train_test_data(train_file: str):
-    for seed in range(10):
+    for seed in [42, 503, 4138]:
         np.random.seed(seed)
         create_training_data(train_file, list(DATASETS.keys()))
     return
@@ -220,6 +223,6 @@ if __name__ == '__main__':
     np.random.seed(42)
     os.makedirs(TRAIN_PATH, exist_ok=True)
     _train_filename = os.path.join(TRAIN_PATH, 'train.csv')
-    # create_train_test_data(_train_filename)
-    train_meta_model(_train_filename, 'linear_regression')
+    create_train_test_data(_train_filename)
+    # train_meta_model(_train_filename, 'linear_regression')
     # auc_from_clause()

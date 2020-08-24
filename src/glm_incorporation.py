@@ -7,7 +7,7 @@ from pyclam import Manifold, Cluster, criterion, Graph
 from sklearn.metrics import roc_auc_score
 
 from src import datasets as chaoda_datasets
-from src.datasets import METRICS
+from src.datasets import METRICS, DATASETS
 from src.methods import METHODS, METHOD_NAMES
 from src.utils import TRAIN_PATH
 
@@ -159,7 +159,7 @@ if __name__ == "__main__":
 
     os.makedirs(TRAIN_PATH, exist_ok=True)
 
-    _datasets = ['cardio']
+    _datasets = list(DATASETS.keys())
     _metrics = ['euclidean', 'manhattan']
     _constants = np.array([0.000, 0.414, 0.047, -0.000, -0.483, -0.040])  # np.fromfile(CONSTANTS, dtype=np.float)
     _filename = os.path.join(TRAIN_PATH, 'lr_predictions.csv')
