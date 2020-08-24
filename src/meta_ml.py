@@ -112,69 +112,106 @@ def create_train_test_data(train_file: str):
 
 
 def train_meta_model(train_file: str, meta_model: str):
-    features = FEATURE_NAMES + [f'{name}_ema' for name in FEATURE_NAMES]
-    targets = list(METHOD_NAMES.values())
     train_datasets = list(sorted(np.random.choice(TRAIN_DATASETS, 8, replace=False)))
     print(train_datasets)
 
     df = pd.read_csv(train_file)
 
+    targets = list(METHOD_NAMES.values())
+    meta_columns = [target for target in targets] + ['dataset', 'metric', 'depth']
+    features = [name for name in df.columns if name not in meta_columns]
+
     train_df = pd.concat([
         df[df['dataset'].str.contains(dataset)]
         for dataset in train_datasets
     ])
-    train_x = train_df[features]
-
     test_df = pd.concat([
         df[df['dataset'].str.contains(dataset)]
         for dataset in DATASETS
         if dataset not in train_datasets
     ])
-    test_x = test_df[features]
 
-    for target in targets:
-        train_y = train_df[target]
-        test_y = test_df[target]
+    for mean in ['amean', 'gmean', 'hmean']:
+        # feature_names = [name for name in features if name[:-len(mean)] == mean]
+        feature_names = [name for name in features]
 
-        if meta_model == 'linear_regression':
-            model = linear_regression(train_x, train_y, export='text', feature_names=features, target=target)
-        elif meta_model == 'regression_tree':
-            model = regression_tree(train_x, train_y, export='graphviz', feature_names=features, target=target)
-        else:
-            raise ValueError(f'{meta_model} not implemented')
+        train_x = train_df[feature_names]
+        test_x = test_df[feature_names]
 
-        pred_y = model.predict(test_x)
-        mse = mean_squared_error(test_y, pred_y)
-        print(f'{target} MSE: {mse:.3f}')
-        # print(f'{target} RMSE: {np.sqrt(mse):.3f}')
+        for target in targets:
+            train_y = train_df[target]
+            test_y = test_df[target]
+
+            if meta_model == 'linear_regression':
+                model = linear_regression(
+                    train_x,
+                    train_y,
+                    export='csv',
+                    mean=mean,
+                    feature_names=feature_names,
+                    target=target,
+                )
+            elif meta_model == 'regression_tree':
+                model = regression_tree(
+                    train_x,
+                    train_y,
+                    export='graphviz',
+                    mean=mean,
+                    feature_names=feature_names,
+                    target=target,
+                )
+            else:
+                raise ValueError(f'{meta_model} not implemented')
+
+            pred_y = model.predict(test_x)
+            mse = mean_squared_error(test_y, pred_y)
+            print(f'{mean} {target} MSE: {mse:.3f}')
+            # print(f'{target} RMSE: {np.sqrt(mse):.3f}')
     return
 
 
-def regression_tree(train_x: np.ndarray, train_y: np.ndarray, *, export: str = None, feature_names: List[str] = None, target: str = None):
+def regression_tree(
+        train_x: np.ndarray,
+        train_y: np.ndarray,
+        *,
+        export: str = None,
+        mean: str = None,
+        feature_names: List[str] = None,
+        target: str = None,
+):
     decision_tree = DecisionTreeRegressor(max_depth=3)
     decision_tree = decision_tree.fit(train_x, train_y)
     if export:
         if export == 'graphviz':
             export = export_graphviz(decision_tree, out_file=None, feature_names=feature_names)
             graph = pydotplus.graph_from_dot_data(export)
-            graph.write_png(os.path.join(TRAIN_PATH, f'{target}_tree.png'))
+            graph.write_png(os.path.join(TRAIN_PATH, f'{target}_tree_{mean}.png'))
         else:
             pass
     return decision_tree
 
 
-def linear_regression(train_x: np.ndarray, train_y: np.ndarray, *, export: str = None, feature_names: List[str] = None, target: str = None):
+def linear_regression(
+        train_x: np.ndarray,
+        train_y: np.ndarray,
+        *,
+        export: str = None,
+        mean: str = None,
+        feature_names: List[str] = None,
+        target: str = None,
+):
     model = LinearRegression()
     model = model.fit(train_x, train_y)
     if export:
-        filename = os.path.join(TRAIN_PATH, f'linear_regression.csv')
-        if not os.path.exists(filename):
-            with open(filename, 'w') as fp:
-                header = ','.join(feature_names)
-                fp.write(f'method,{header}\n')
-        with open(filename, 'a') as fp:
-            line = ','.join([f'{coefficient:.3f}' for coefficient in model.coef_])
-            fp.write(f'{target},{line}\n')
+        if export == 'csv':
+            filename = os.path.join(TRAIN_PATH, f'linear_regression_{mean}.csv')
+            if not os.path.exists(filename):
+                with open(filename, 'w') as fp:
+                    header = ','.join(feature_names)
+                    fp.write(f'method,{header}\n')
+            with open(filename, 'a') as fp:
+                line = ','.join([f'{coefficient:.8f}' for coefficient in model.coef_])
+                fp.write(f'{target},{line}\n')
     return model
 
 
@@ -223,6 +260,6 @@ if __name__ == '__main__':
     np.random.seed(42)
     os.makedirs(TRAIN_PATH, exist_ok=True)
     _train_filename = os.path.join(TRAIN_PATH, 'train.csv')
-    create_train_test_data(_train_filename)
-    # train_meta_model(_train_filename, 'linear_regression')
+    # create_train_test_data(_train_filename)
+    train_meta_model(_train_filename, 'linear_regression')
     # auc_from_clause()
