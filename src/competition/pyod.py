@@ -30,8 +30,9 @@ from pyod.models import xgbod
 from ..datasets import read
 from ..datasets import DATASETS
 
-TRAIN = 0.10
+TRAIN = 0.80
 
+# TODO: Explore Neuron issues and see if they can be fixed.
 METHODS = {
     # 'ABOD': abod.ABOD, # Neuron issue
     # 'AUTOENCODER': auto_encoder.AutoEncoder, # Neuron issue
@@ -56,33 +57,37 @@ METHODS = {
     'ALL': None
 }
 
+
 def train_test(model, data, labels):
+    # TODO: Unsupervised training, generate outlier scores and use auc for comparison
+
     # Split the data into train/test.
     n_train = round(len(data) * TRAIN)
     train_data, test_data = data[:n_train], data[n_train:]
     train_labels, test_labels = labels[:n_train], labels[n_train:]
-    
+
     # Train the model.
     start = time.time()
     model.fit(train_data, train_labels)
-    traintime = time.time() - start
+    train_time = time.time() - start
 
     # Evaluate.
     start = time.time()
     predicted = model.predict(test_data)
-    predicttime = time.time() - start
+    predict_time = time.time() - start
 
-    score = np.sum(predicted == test_labels)/len(test_labels)
+    # TODO: Use auc_roc for score
+    score = np.sum(predicted == test_labels) / len(test_labels)
     print('\n'.join([
         f'{"#" * 15} BEGIN SUMMARY {"#" * 15}',
         f'method={str(model)}',
-        f'train=({train_data.shape}, {train_labels.shape})', 
-        f'test=({test_data.shape}, {test_labels.shape})', 
+        f'train=({train_data.shape}, {train_labels.shape})',
+        f'test=({test_data.shape}, {test_labels.shape})',
         f'predicted={predicted.shape}',
         f'score={score:0.3f}',
         f'{"#" * 15} END SUMMARY  {"#" * 15}'
     ]))
-    return score, traintime, predicttime
+    return score, train_time, predict_time
 
 
 @click.command()
@@ -91,22 +96,24 @@ def train_test(model, data, labels):
 def main(dataset: str, method: str) -> None:
     data, labels = read(dataset)
     if method.upper() == 'ALL':
+        # TODO: use proper filename and location for results
         with open('results.csv', 'w') as fp:
             writer = csv.writer(fp)
             writer.writerow(['model', 'dataset', 'train-time', 'predict-time', 'score'])
 
         for name, model in METHODS.items():
             print(f'Train/test: {name}')
+            # noinspection PyBroadException
             try:
-                score, traintime, predicttime = train_test(model(), data, labels)
-            except Exception as err:
+                score, train_time, predict_time = train_test(model(), data, labels)
+            except Exception as _:
                 score = 'FAILURE'
-                traintime = 'NA'
-                predicttime = 'NA'
-            
+                train_time = 'NA'
+                predict_time = 'NA'
+
             with open('results.csv', 'a') as fp:
                 writer = csv.writer(fp)
-                writer.writerow([name, dataset, traintime, predicttime, score])
+                writer.writerow([name, dataset, train_time, predict_time, score])
 
     else:
         model = METHODS[method.upper()]()
