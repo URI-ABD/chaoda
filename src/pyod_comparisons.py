@@ -4,10 +4,7 @@ import time
 import csv
 
 import numpy as np
-import click
 
-from pyod.models import abod
-from pyod.models import auto_encoder
 from pyod.models import cblof
 from pyod.models import cof
 from pyod.models import hbos
@@ -16,7 +13,6 @@ from pyod.models import knn
 from pyod.models import lmdd
 from pyod.models import loda
 from pyod.models import lof
-from pyod.models import loci
 from pyod.models import lscp
 from pyod.models import mcd
 from pyod.models import mo_gaal
@@ -24,16 +20,15 @@ from pyod.models import ocsvm
 from pyod.models import sod
 from pyod.models import so_gaal
 from pyod.models import sos
-from pyod.models import vae
 from pyod.models import xgbod
 
-from ..datasets import read
-from ..datasets import DATASETS
+import src.datasets as chaoda_datasets
+from src.utils import RESULTS_PATH
 
 TRAIN = 0.80
 
 # TODO: Explore Neuron issues and see if they can be fixed.
-METHODS = {
+MODELS = {
     # 'ABOD': abod.ABOD, # Neuron issue
     # 'AUTOENCODER': auto_encoder.AutoEncoder, # Neuron issue
     'CBLOF': cblof.CBLOF,
@@ -44,7 +39,7 @@ METHODS = {
     'LMDD': lmdd.LMDD,
     'LODA': loda.LODA,
     'LOF': lof.LOF,
-    'LOCI': loci.LOCI,
+    # 'LOCI': loci.LOCI, # training takes too long
     'LSCP': lscp.LSCP,
     'MCD': mcd.MCD,
     'MOGAAL': mo_gaal.MO_GAAL,
@@ -90,36 +85,44 @@ def train_test(model, data, labels):
     return score, train_time, predict_time
 
 
-@click.command()
-@click.argument('dataset', type=click.Choice(DATASETS.keys(), case_sensitive=False))
-@click.argument('method', type=click.Choice(METHODS.keys(), case_sensitive=False))
-def main(dataset: str, method: str) -> None:
-    data, labels = read(dataset)
-    if method.upper() == 'ALL':
-        # TODO: use proper filename and location for results
-        with open('results.csv', 'w') as fp:
+# @click.command()
+# @click.argument('dataset', type=click.Choice(DATASETS.keys(), case_sensitive=False))
+# @click.argument('method', type=click.Choice(METHODS.keys(), case_sensitive=False))
+def main(filename: str, dataset: str, method: str) -> None:
+    if not os.path.exists(filename):
+        with open(filename, 'w') as fp:
             writer = csv.writer(fp)
-            writer.writerow(['model', 'dataset', 'train-time', 'predict-time', 'score'])
+            writer.writerow(['dataset', 'model', 'train-time', 'predict-time', 'score'])
 
-        for name, model in METHODS.items():
+    data, labels = chaoda_datasets.read(dataset)
+    if method.upper() == 'ALL':
+        for name, model in MODELS.items():
             print(f'Train/test: {name}')
             # noinspection PyBroadException
             try:
                 score, train_time, predict_time = train_test(model(), data, labels)
             except Exception as _:
-                score = 'FAILURE'
                 train_time = 'NA'
                 predict_time = 'NA'
+                score = 'EXCEPTION'
 
-            with open('results.csv', 'a') as fp:
+            with open(filename, 'a') as fp:
                 writer = csv.writer(fp)
-                writer.writerow([name, dataset, train_time, predict_time, score])
+                writer.writerow([dataset, name, train_time, predict_time, score])
 
     else:
-        model = METHODS[method.upper()]()
+        model = MODELS[method.upper()]()
         train_test(model, data, labels)
 
 
 if __name__ == "__main__":
     warnings.filterwarnings('ignore')
-    main()
+    np.random.seed(42)
+
+    os.makedirs(RESULTS_PATH, exist_ok=True)
+    _filename = os.path.join(RESULTS_PATH, 'comparisons.csv')
+
+    # _datasets = list(chaoda_datasets.DATASETS.keys())
+    _datasets = ['cardio']
+    for _dataset in _datasets:
+        main(_filename, _dataset, 'All')

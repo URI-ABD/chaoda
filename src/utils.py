@@ -4,6 +4,7 @@ BUILD_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'buil
 DATA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
 PLOTS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'plots'))
 TRAIN_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'train'))
+RESULTS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'results'))
 
 AUC_PATH = os.path.join(PLOTS_PATH, 'auc_vs_depth')
 LFD_PATH = os.path.join(PLOTS_PATH, 'lfd_vs_depth')
