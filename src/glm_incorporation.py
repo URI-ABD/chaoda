@@ -1,125 +1,44 @@
 import os
-import logging
-from typing import List, Set, Dict
+from typing import List, Dict
 
 import numpy as np
-from pyclam import Manifold, Cluster, criterion, Graph
+from pyclam import Manifold, criterion
 from sklearn.metrics import roc_auc_score
 
 from src import datasets as chaoda_datasets
 from src.datasets import METRICS, DATASETS
-from src.methods import METHODS, METHOD_NAMES
+from src.methods import METHODS, ensemble
 from src.utils import TRAIN_PATH
 
-CONSTANTS = os.path.join(os.path.dirname(__file__), '..', 'constants.npy')
+CONSTANTS = os.path.join(os.path.dirname(__file__), '..', 'train', 'linear_regression.csv')
 NORMALIZE = True
 SUB_SAMPLE = 100_000
 MAX_DEPTH = 50
 
 
-def auc_scores(graph: Graph, labels: List[int]) -> List[float]:
-    scores: List[float] = list()
-    for method in METHODS:
-        anomalies: Dict[int, float] = METHODS[method](graph)
-        y_true, y_score = list(), list()
-        [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
-        scores.append(roc_auc_score(y_true, y_score))
-
-    return scores
-
-
-def ema(current, previous, smoothing=2.0, period=10):
-    """ Calculates the Exponential moving average.
-    """
-    alpha = smoothing / (1 + period)
-    return alpha * current + previous * (1 - alpha)
-
-
-def calculate_ratios(cluster: Cluster):
-    """ Calculates the relevant ratios and ema of ratios for a given cluster.
-    """
-    # Add features here as they are needed.
-    cluster.ratios = np.array([  # Child/Parent Ratios
-        cluster.local_fractal_dimension / cluster.parent.local_fractal_dimension,  # local fractal dimension
-        cluster.cardinality / cluster.parent.cardinality,  # cardinality
-        max(cluster.radius, 1e-16) / max(cluster.parent.radius, 1e-16)  # radius
-    ])
-    # noinspection PyUnresolvedReferences
-    cluster.ema_ratios = np.array([  # Exponential Moving Averages
-        ema(c, p) for c, p in zip(cluster.ratios, cluster.parent.ratios)
-    ])
-    return
-
-
-def predict_auc(manifold: Manifold, constants: np.ndarray) -> Manifold:
-    """ Predicts the auc contribution from each cluster in the manifold using the constants provided by a linear regression.
-    """
-    manifold.root.ratios = np.ones(shape=(len(constants) // 2,), dtype=float)
-    for layer in manifold.layers[1:]:
-        clusters: List[Cluster] = [c for c in layer.clusters if c.depth == layer.depth]
-        for cluster in clusters:
-            calculate_ratios(cluster)
-            # noinspection PyUnresolvedReferences
-            chaoda_features = np.concatenate([cluster.ratios, cluster.ema_ratios])
-            cluster.chaoda_auc = np.dot(constants, chaoda_features)
-
-    return manifold
-
-
-def subtree_auc(cluster: Cluster) -> np.ndarray:
-    """ Returns the distribution of predicted auc for the subtree of the given cluster.
-    Assumes that cluster has children.
-    """
-    # noinspection PyUnresolvedReferences
-    return np.asarray([
-        child.chaoda_auc
-        for layer in cluster.manifold.layers[cluster.depth + 1:]
-        for child in layer.clusters
-        if cluster.name == child.name[:len(cluster.name)]
-    ])
-
-
-def select_graph(manifold: Manifold) -> Manifold:
-    graph: Set[Cluster] = set()
-    clusters: List[Cluster] = [child for child in manifold.root.children]
-    while clusters:
-        new_clusters: List[Cluster] = list()
-        for cluster in clusters:
-            if cluster.children:
-                # noinspection PyUnresolvedReferences
-                if cluster.chaoda_auc >= np.percentile(subtree_auc(cluster), q=75):
-                    graph.add(cluster)
-                else:
-                    new_clusters.extend(cluster.children)
-            else:
-                graph.add(cluster)
-        clusters = new_clusters
-
-    manifold.graph = Graph(*graph)
-
-    # max_depth = max((cluster.depth for cluster in graph))
-    # manifold.layers[max_depth].build_edges()
-
-    manifold.graph.build_edges()
-
-    depths = [cluster.depth for cluster in manifold.graph.clusters]
-    subsumed_ratio = len(manifold.graph.subsumed_clusters) / manifold.graph.cardinality
-    logging.info(f'selected graph from auc_predictions:\n'
-                 f'{manifold.graph.cardinality} clusters,\n'
-                 f'depths ({min(depths)}, {max(depths)}),\n'
-                 f'with {subsumed_ratio:.3f} subsumed ratio.')
-
-    return manifold
-
-
-def evaluate_auc(datasets: List[str], metrics: List[str], constants: np.array, filename: str):
-    """ Evaluate auc performance from linear regression constants.
+def evaluate_auc(
+        datasets: List[str],
+        metrics: List[str],
+        selections: List[str],
+        methods: List[str],
+        modes: List[str],
+        filename: str,
+):
+    """ Evaluate auc performance from ensemble of linear regression models.
 
     :param datasets: the dataset to work on.
     :param metrics: the distance metric to use.
-    :param constants: the constants learned by linear regression.
+    :param selections: ways in which to select Clusters for criteria.
+    :param methods: methods from which to build the ensemble.
+    :param modes: modes to use for each ensemble.
     :param filename: file in which to store auc performance.
     """
+    assert all((dataset in DATASETS.keys() for dataset in datasets))
+    assert all((metric in METRICS.keys() for metric in metrics))
+    assert all((selection in ['percentile', 'ranked'] for selection in selections))
+    assert all((method in METHODS.keys() for method in methods))
+    assert all((mode in ['mean', 'product', 'max', 'min', 'max2', 'min2'] for mode in modes))
+
     for dataset in datasets:
         for metric in metrics:
             data, labels = chaoda_datasets.read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
@@ -138,34 +57,63 @@ def evaluate_auc(datasets: List[str], metrics: List[str], constants: np.array, f
                 min_points = 16
                 # continue
 
+            selection_criteria = list()
+            for selection in selections:
+                selection_criteria.extend([
+                    # amean
+                    criterion.LinearRegressionConstants([-0.14319379, 0.93448878, 0.06358055, 1.06531136, -0.87266898, 0.74385150], mode=selection),  # CC
+                    criterion.LinearRegressionConstants([-0.30966183, 1.05683555, -0.34853912, 0.24952643, -0.80869111, 0.55849258], mode=selection),  # PC
+                    criterion.LinearRegressionConstants([-0.44543049, 0.65531289, -0.68583568, 0.13843472, -0.29488228, 0.17655670], mode=selection),  # KN
+                    criterion.LinearRegressionConstants([-0.19476319, 0.37860120, -0.38484169, 0.01405269, -0.15549294, 0.06742359], mode=selection),  # SC
+                    # gmean
+                    criterion.LinearRegressionConstants([0.92364676, 1.48489494, -0.13286499, 0.80007102, -0.28516064, 0.54944094], mode=selection),  # CC
+                    criterion.LinearRegressionConstants([0.50948156, 1.04453613, -0.16324464, -0.20873248, 0.21199436, -0.31026809], mode=selection),  # PC
+                    criterion.LinearRegressionConstants([0.04960365, 0.19498710, -0.06669465, -0.60589915, 0.51893140, -0.97682891], mode=selection),  # KN
+                    criterion.LinearRegressionConstants([-0.02220604, 0.07368668, -0.01657270, -0.31052205, 0.27907633, -0.55491548], mode=selection),  # SC
+                    # hmean
+                    criterion.LinearRegressionConstants([0.14722934, -0.43870436, 0.08297998, -1.49424028, -0.35540001, -0.16619623], mode=selection),  # CC
+                    criterion.LinearRegressionConstants([0.06298725, -0.09990198, -0.00211826, -1.72168161, 0.05267363, -0.72643832], mode=selection),  # PC
+                    criterion.LinearRegressionConstants([0.31918357, 0.35341069, -0.02277890, -0.70065582, 0.29002082, -0.88020777], mode=selection),  # KN
+                    criterion.LinearRegressionConstants([0.17663877, 0.15718700, 0.00676820, -0.42367319, 0.15126572, -0.49953437], mode=selection),  # SC
+                ])
+
             manifold = Manifold(data, METRICS[metric]).build(
                 criterion.MaxDepth(MAX_DEPTH),
                 criterion.MinPoints(min_points),
+                *selection_criteria,
             )
 
-            manifold = predict_auc(manifold, constants)
-            manifold = select_graph(manifold)
+            for i, graph in enumerate(manifold.graphs):
+                graph.method = methods[i % len(methods)]
 
+            scores: List[float] = list()
+            for mode in modes:
+                anomalies: Dict[int, float] = ensemble(manifold, mode)
+                y_true, y_score = list(), list()
+                [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
+                scores.append(roc_auc_score(y_true, y_score))
+
+            scores: str = ','.join([f'{score:.3f}' for score in scores])
             with open(filename, 'a') as fp:
-                scores = auc_scores(manifold.graph, labels)
-                line = ','.join([f'{score:.3f}' for score in scores])
-                fp.write(f'{dataset},{metric},{line}\n')
+                fp.write(f'{dataset},{metric},{scores}\n')
 
     return
 
 
 if __name__ == "__main__":
     np.random.seed(42)
-
     os.makedirs(TRAIN_PATH, exist_ok=True)
 
     _datasets = list(DATASETS.keys())
     _metrics = ['euclidean', 'manhattan']
-    _constants = np.array([0.000, 0.414, 0.047, -0.000, -0.483, -0.040])  # np.fromfile(CONSTANTS, dtype=np.float)
-    _filename = os.path.join(TRAIN_PATH, 'lr_predictions.csv')
-    if not os.path.exists(_filename):
-        with open(_filename, 'w') as _fp:
-            _methods = ','.join([f'{_method}' for _method in METHOD_NAMES.values()])
-            _fp.write(f'dataset,metric,{_methods}\n')
+    _selections = ['percentile', 'ranked']
+    _methods = ['cluster_cardinality', 'hierarchical', 'k_neighborhood', 'subgraph_cardinality']
+    _modes = ['mean', 'product', 'max', 'min', 'max2', 'min2']
 
-    evaluate_auc(_datasets, _metrics, _constants, _filename)
+    _filename = os.path.join(TRAIN_PATH, 'ensemble_predictions.csv')
+    if not os.path.exists(_filename):
+        _header = ','.join([f'ensemble_{_m}' for _m in _modes])
+        with open(_filename, 'w') as _fp:
+            _fp.write(f'dataset,metric,{_header}\n')
+
+    evaluate_auc(_datasets, _metrics, _selections, _methods, _modes, _filename)

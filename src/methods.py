@@ -1,11 +1,20 @@
 from collections import deque
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
-from pyclam.manifold import Cluster, Graph
+from pyclam.manifold import Cluster, Graph, Manifold
 
 
 # TODO: Parent-Child radii ratios as proxy to anomalousness.
+# TODO: Print graphs in dot format and visualize them
+# TODO: 1 / depth as proxy of anomalousness
+
+METHOD_NAMES = {
+    'cluster_cardinality': 'CC',
+    'hierarchical': 'PC',
+    'k_neighborhood': 'KN',
+    'subgraph_cardinality': 'SC',
+}
 
 
 def normalize(anomalies: Dict[int, float]) -> Dict[int, float]:
@@ -165,12 +174,33 @@ METHODS = {
     'subgraph_cardinality': subgraph_cardinality_anomalies,
 }
 
-METHOD_NAMES = {
-    'cluster_cardinality': 'CC',
-    'hierarchical': 'PC',
-    'k_neighborhood': 'KN',
-    'subgraph_cardinality': 'SC',
-}
 
-# TODO: Print graphs in dot format and visualize them
-# TODO: 1 / depth as proxy of anomalousness
+def ensemble(manifold: Manifold, mode: str) -> Dict[int, float]:
+    """ Builds ensemble model from given methods, using given option of combining scores.
+
+    :param manifold: manifold from which to calculate outlier scores
+    :param mode: how to combine scores. One of 'mean', 'product', 'max' or 'min'.
+    """
+    assert mode in ['mean', 'product', 'max', 'min', 'max2', 'min2']
+
+    scores: List[np.ndarray] = list()
+    for graph in manifold.graphs:
+        score: Dict[int, float] = METHODS[graph.method](graph)
+        scores.append(np.asarray([score[i] for i in range(len(score.keys()))], dtype=float))
+
+    if mode == 'mean':
+        means: np.ndarray = np.sum(scores, axis=0) / len(scores)
+        return {i: float(s) for i, s in enumerate(means)}
+    elif mode == 'product':
+        products = np.ones_like(scores[0])
+        for score in scores:
+            products = np.multiply(products, score)
+        return {i: float(p) for i, p in enumerate(products)}
+    elif mode == 'max':
+        return {i: float(max(s[i] for s in scores)) for i in range(len(scores[0]))}
+    elif mode == 'min':
+        return {i: float(min(s[i] for s in scores)) for i in range(len(scores[0]))}
+    elif mode == 'max2':
+        return {i: float(sum(list(sorted([s[i] for s in scores], reverse=True))[:2]) / 2) for i in range(len((scores[0])))}
+    elif mode == 'min2':
+        return {i: float(sum(list(sorted([s[i] for s in scores]))[:2]) / 2) for i in range(len((scores[0])))}
