@@ -53,7 +53,7 @@ MODELS = {
 @timeout(60)
 def train_model(model, data):
     model.fit(data)
-    return model
+    return model.predict(data)
 
 
 def run_pyod_models(filename: str, dataset: str) -> None:
@@ -65,8 +65,7 @@ def run_pyod_models(filename: str, dataset: str) -> None:
         print(f'{name}', end=', ')
         # noinspection PyBroadException
         try:
-            pyod_model = train_model(model(), data)
-            outlier_scores = pyod_model.predict(data)
+            outlier_scores = train_model(model(), data)
             score = roc_auc_score(labels, outlier_scores)
             score = f'{score:.3f}'
         except TimeoutError:
