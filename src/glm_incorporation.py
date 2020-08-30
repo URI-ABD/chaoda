@@ -3,11 +3,12 @@ from typing import List, Dict
 
 import numpy as np
 from pyclam import Manifold, criterion
+from pyclam.criterion import SELECTION_MODES
 from sklearn.metrics import roc_auc_score
 
 from src import datasets as chaoda_datasets
 from src.datasets import METRICS, DATASETS
-from src.methods import METHODS, ensemble
+from src.methods import METHODS, ensemble, ENSEMBLE_MODES, METHOD_NAMES
 from src.utils import TRAIN_PATH
 
 CONSTANTS = os.path.join(os.path.dirname(__file__), '..', 'train', 'linear_regression.csv')
@@ -35,9 +36,9 @@ def evaluate_auc(
     """
     assert all((dataset in DATASETS.keys() for dataset in datasets))
     assert all((metric in METRICS.keys() for metric in metrics))
-    assert all((selection in ['percentile', 'ranked'] for selection in selections))
+    assert all((selection in SELECTION_MODES.keys() for selection in selections))
     assert all((method in METHODS.keys() for method in methods))
-    assert all((mode in ['mean', 'product', 'max', 'min', 'max2', 'min2'] for mode in modes))
+    assert all((mode in ENSEMBLE_MODES for mode in modes))
 
     for dataset in datasets:
         for metric in metrics:
@@ -57,9 +58,8 @@ def evaluate_auc(
                 min_points = 16
                 # continue
 
-            selection_criteria = list()
             for selection in selections:
-                selection_criteria.extend([
+                selection_criteria = [
                     # amean
                     criterion.LinearRegressionConstants([-0.14319379, 0.93448878, 0.06358055, 1.06531136, -0.87266898, 0.74385150], mode=selection),  # CC
                     criterion.LinearRegressionConstants([-0.30966183, 1.05683555, -0.34853912, 0.24952643, -0.80869111, 0.55849258], mode=selection),  # PC
@@ -75,28 +75,35 @@ def evaluate_auc(
                     criterion.LinearRegressionConstants([0.06298725, -0.09990198, -0.00211826, -1.72168161, 0.05267363, -0.72643832], mode=selection),  # PC
                     criterion.LinearRegressionConstants([0.31918357, 0.35341069, -0.02277890, -0.70065582, 0.29002082, -0.88020777], mode=selection),  # KN
                     criterion.LinearRegressionConstants([0.17663877, 0.15718700, 0.00676820, -0.42367319, 0.15126572, -0.49953437], mode=selection),  # SC
-                ])
+                ]
 
-            manifold = Manifold(data, METRICS[metric]).build(
-                criterion.MaxDepth(MAX_DEPTH),
-                criterion.MinPoints(min_points),
-                *selection_criteria,
-            )
+                manifold = Manifold(data, METRICS[metric]).build(
+                    criterion.MaxDepth(MAX_DEPTH),
+                    criterion.MinPoints(min_points),
+                    *selection_criteria,
+                )
 
-            for i, graph in enumerate(manifold.graphs):
-                graph.method = methods[i % len(methods)]
+                for i, graph in enumerate(manifold.graphs):
+                    graph.method = methods[i % len(methods)]
 
-            scores: List[float] = list()
-            for mode in modes:
-                anomalies: Dict[int, float] = ensemble(manifold, mode)
-                y_true, y_score = list(), list()
-                [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
-                scores.append(roc_auc_score(y_true, y_score))
+                ensemble_scores: List[float] = list()
+                for mode in modes:
+                    anomalies: Dict[int, float] = ensemble(manifold, mode)
+                    y_true, y_score = list(), list()
+                    [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
+                    ensemble_scores.append(roc_auc_score(y_true, y_score))
 
-            scores: str = ','.join([f'{score:.3f}' for score in scores])
-            with open(filename, 'a') as fp:
-                fp.write(f'{dataset},{metric},{scores}\n')
+                method_scores: List[float] = list()
+                for graph in manifold.graphs:
+                    anomalies: Dict[int, float] = METHODS[graph.method](graph)
+                    y_true, y_score = list(), list()
+                    [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
+                    method_scores.append(roc_auc_score(y_true, y_score))
 
+                ensemble_scores: str = ','.join([f'{score:.3f}' for score in ensemble_scores])
+                method_scores: str = ','.join([f'{score:.3f}' for score in method_scores])
+                with open(filename, 'a') as fp:
+                    fp.write(f'{dataset},{metric},{selection},{ensemble_scores},{method_scores}\n')
     return
 
 
@@ -108,12 +115,15 @@ if __name__ == "__main__":
     _metrics = ['euclidean', 'manhattan']
     _selections = ['percentile', 'ranked']
     _methods = ['cluster_cardinality', 'hierarchical', 'k_neighborhood', 'subgraph_cardinality']
-    _modes = ['mean', 'product', 'max', 'min', 'max2', 'min2']
+
+    _modes = ['mean', 'product', 'max', 'min', 'max25', 'min25']
+    _ensemble_labels = ','.join([f'ensemble_{_m}' for _m in _modes])
+
+    _means = ['amean', 'gmean', 'hmean']
+    _method_labels = ','.join([f'{METHOD_NAMES[_n]}_{_m}' for _m in _means for _n in _methods])
 
     _filename = os.path.join(TRAIN_PATH, 'ensemble_predictions.csv')
-    if not os.path.exists(_filename):
-        _header = ','.join([f'ensemble_{_m}' for _m in _modes])
-        with open(_filename, 'w') as _fp:
-            _fp.write(f'dataset,metric,{_header}\n')
+    with open(_filename, 'w') as _fp:
+        _fp.write(f'dataset,metric,selection,{_ensemble_labels},{_method_labels}\n')
 
     evaluate_auc(_datasets, _metrics, _selections, _methods, _modes, _filename)

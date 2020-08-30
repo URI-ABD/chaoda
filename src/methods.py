@@ -15,6 +15,7 @@ METHOD_NAMES = {
     'k_neighborhood': 'KN',
     'subgraph_cardinality': 'SC',
 }
+ENSEMBLE_MODES = ['mean', 'product', 'max', 'min', 'max25', 'min25']
 
 
 def normalize(anomalies: Dict[int, float]) -> Dict[int, float]:
@@ -181,7 +182,7 @@ def ensemble(manifold: Manifold, mode: str) -> Dict[int, float]:
     :param manifold: manifold from which to calculate outlier scores
     :param mode: how to combine scores. One of 'mean', 'product', 'max' or 'min'.
     """
-    assert mode in ['mean', 'product', 'max', 'min', 'max2', 'min2']
+    assert mode in ENSEMBLE_MODES
 
     scores: List[np.ndarray] = list()
     for graph in manifold.graphs:
@@ -200,7 +201,9 @@ def ensemble(manifold: Manifold, mode: str) -> Dict[int, float]:
         return {i: float(max(s[i] for s in scores)) for i in range(len(scores[0]))}
     elif mode == 'min':
         return {i: float(min(s[i] for s in scores)) for i in range(len(scores[0]))}
-    elif mode == 'max2':
-        return {i: float(sum(list(sorted([s[i] for s in scores], reverse=True))[:2]) / 2) for i in range(len((scores[0])))}
-    elif mode == 'min2':
-        return {i: float(sum(list(sorted([s[i] for s in scores]))[:2]) / 2) for i in range(len((scores[0])))}
+    elif mode == 'max25':
+        quarter = len(scores[0]) // 4
+        return {i: float(sum(list(sorted([s[i] for s in scores], reverse=True))[:quarter]) / quarter) for i in range(len((scores[0])))}
+    elif mode == 'min25':
+        quarter = len(scores[0]) // 4
+        return {i: float(sum(list(sorted([s[i] for s in scores]))[:quarter]) / quarter) for i in range(len((scores[0])))}

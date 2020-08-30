@@ -1,4 +1,7 @@
+import errno
 import os
+import signal
+from functools import wraps
 
 BUILD_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build'))
 DATA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
@@ -32,3 +35,23 @@ def manifold_path(dataset, metric, min_points, graph_ratio) -> str:
 
 def dataset_from_path(path):
     return os.path.basename(path).split(':')[0]
+
+
+def timeout(seconds, error_message=os.strerror(errno.ETIME)):
+    def decorator(func):
+        # noinspection PyUnusedLocal
+        def _handle_timeout(signum, frame):
+            raise TimeoutError(error_message)
+
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+
+        return wraps(func)(wrapper)
+
+    return decorator
