@@ -3,6 +3,8 @@ import warnings
 from typing import List
 
 import numpy as np
+from pyod.models import abod
+from pyod.models import auto_encoder
 from pyod.models import cblof
 from pyod.models import cof
 from pyod.models import hbos
@@ -19,6 +21,7 @@ from pyod.models import ocsvm
 from pyod.models import so_gaal
 from pyod.models import sod
 from pyod.models import sos
+from pyod.models import vae
 from pyod.models import xgbod
 from sklearn.metrics import roc_auc_score
 
@@ -29,24 +32,24 @@ from src.utils import RESULTS_PATH, timeout
 MODELS = {
     # 'ABOD': abod.ABOD, # Neuron issue
     # 'AUTOENCODER': auto_encoder.AutoEncoder, # Neuron issue
-    'CBLOF': cblof.CBLOF,  # takes too long
+    'CBLOF': cblof.CBLOF,
     'COF': cof.COF,
-    'HBOS': hbos.HBOS,  # takes too long
+    'HBOS': hbos.HBOS,
     'IFOREST': iforest.IForest,
     'KNN': knn.KNN,
     'LMDD': lmdd.LMDD,
-    'LOCI': loci.LOCI,  # training takes too long
+    'LOCI': loci.LOCI,
     'LODA': loda.LODA,
     'LOF': lof.LOF,
-    'LSCP': lscp.LSCP,  # Exception
+    'LSCP': lscp.LSCP,
     'MCD': mcd.MCD,
-    'MOGAAL': mo_gaal.MO_GAAL,  # Exception
+    # 'MOGAAL': mo_gaal.MO_GAAL,  # need gpu
     'OCSVM': ocsvm.OCSVM,
     'SOD': sod.SOD,  # takes too long
-    'SOGAAL': so_gaal.SO_GAAL,  # Exception
+    # 'SOGAAL': so_gaal.SO_GAAL,  # need gpu
     'SOS': sos.SOS,
     # 'VAE': vae.VAE, # Disabled due to: "ValueError: The number of neurons should not exceed the number of features"
-    'XGBOD': xgbod.XGBOD,  # takes too long
+    'XGBOD': xgbod.XGBOD,
 }
 
 
@@ -91,7 +94,6 @@ if __name__ == "__main__":
         _header = ','.join(MODELS.keys())
         _fp.write(f'dataset,{_header}\n')
 
-    # _datasets = list(chaoda_datasets.DATASETS.keys())
-    _datasets = ['cardio']
+    _datasets = list(chaoda_datasets.DATASETS.keys())
     for _dataset in _datasets:
         run_pyod_models(_filename, _dataset)
