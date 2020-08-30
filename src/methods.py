@@ -3,7 +3,7 @@ from typing import Dict, List
 
 import numpy as np
 from pyclam.manifold import Cluster, Graph, Manifold
-
+from scipy.special import erf
 
 # TODO: Parent-Child radii ratios as proxy to anomalousness.
 # TODO: Print graphs in dot format and visualize them
@@ -16,14 +16,29 @@ METHOD_NAMES = {
     'subgraph_cardinality': 'SC',
 }
 ENSEMBLE_MODES = ['mean', 'product', 'max', 'min', 'max25', 'min25']
+SCALING_MODES = ['linear', 'gaussian']
 
 
-def normalize(anomalies: Dict[int, float]) -> Dict[int, float]:
-    min_v, max_v = np.min(list(anomalies.values())), np.max(list(anomalies.values()))
-    min_v, max_v, = float(min_v), float(max_v)
-    if min_v == max_v:
-        max_v += 1.
-    return {k: (v - min_v) / (max_v - min_v) for k, v in anomalies.items()}
+def normalize(anomalies: Dict[int, float], mode: str = 'gaussian') -> Dict[int, float]:
+    if mode == 'linear':
+        min_v, max_v = np.min(list(anomalies.values())), np.max(list(anomalies.values()))
+        min_v, max_v, = float(min_v), float(max_v)
+        if min_v == max_v:
+            max_v += 1.
+        return {k: (v - min_v) / (max_v - min_v) for k, v in anomalies.items()}
+    elif mode == 'gaussian':
+        indices: List[int] = list(anomalies.keys())
+        scores: np.array = np.asarray(list(anomalies.values()), dtype=float)
+
+        mu, sigma = np.mean(scores), np.std(scores)
+        if sigma < 1e-3:
+            sigma = 1
+
+        scores = erf((scores - mu) / (sigma * np.sqrt(2))).ravel().clip(0, 1)
+
+        return {i: s for i, s in zip(indices, scores)}
+    else:
+        raise ValueError(f'scaling mode {mode} is undefined. Choose one of {SCALING_MODES}.')
 
 
 # def n_points_in_ball(graph: Graph) -> Dict[int, float]:
