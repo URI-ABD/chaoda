@@ -111,7 +111,8 @@ if __name__ == "__main__":
     np.random.seed(42)
     os.makedirs(TRAIN_PATH, exist_ok=True)
 
-    _datasets = list(DATASETS.keys())
+    # _datasets = list(DATASETS.keys())
+    _datasets = ['cardio']
     _metrics = ['euclidean', 'manhattan']
     _selections = ['percentile', 'ranked']
     _methods = ['cluster_cardinality', 'hierarchical', 'k_neighborhood', 'subgraph_cardinality']

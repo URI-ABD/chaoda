@@ -16,29 +16,32 @@ METHOD_NAMES = {
     'subgraph_cardinality': 'SC',
 }
 ENSEMBLE_MODES = ['mean', 'product', 'max', 'min', 'max25', 'min25']
-SCALING_MODES = ['linear', 'gaussian']
+SCALING_MODES = ['linear', 'gaussian', 'sigmoid']
 
 
 def normalize(anomalies: Dict[int, float], mode: str = 'gaussian') -> Dict[int, float]:
+    if mode not in SCALING_MODES:
+        raise ValueError(f'scaling mode {mode} is undefined. Choose one of {SCALING_MODES}.')
+
+    indices: List[int] = list(anomalies.keys())
+    scores: np.array = np.asarray(list(anomalies.values()), dtype=float)
+
+    mu, sigma = np.mean(scores), np.std(scores)
+    if sigma < 1e-3:
+        sigma = 1
+
     if mode == 'linear':
-        min_v, max_v = np.min(list(anomalies.values())), np.max(list(anomalies.values()))
-        min_v, max_v, = float(min_v), float(max_v)
+        min_v, max_v, = float(np.min(scores)), float(np.max(scores))
         if min_v == max_v:
             max_v += 1.
-        return {k: (v - min_v) / (max_v - min_v) for k, v in anomalies.items()}
+        scores = (scores - min_v) / (max_v - min_v)
     elif mode == 'gaussian':
-        indices: List[int] = list(anomalies.keys())
-        scores: np.array = np.asarray(list(anomalies.values()), dtype=float)
+        scores = erf((scores - mu) / (sigma * np.sqrt(2)))
+    elif mode == 'sigmoid':
+        scores = 1 / (1 + np.exp(-(scores - mu) / sigma))
 
-        mu, sigma = np.mean(scores), np.std(scores)
-        if sigma < 1e-3:
-            sigma = 1
-
-        scores = erf((scores - mu) / (sigma * np.sqrt(2))).ravel().clip(0, 1)
-
-        return {i: s for i, s in zip(indices, scores)}
-    else:
-        raise ValueError(f'scaling mode {mode} is undefined. Choose one of {SCALING_MODES}.')
+    scores = scores.ravel().clip(0, 1)
+    return {i: s for i, s in zip(indices, scores)}
 
 
 # def n_points_in_ball(graph: Graph) -> Dict[int, float]:
