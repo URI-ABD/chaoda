@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import List, Dict
 
@@ -41,8 +42,8 @@ def evaluate_auc(
     assert all((mode in ENSEMBLE_MODES for mode in modes))
 
     for dataset in datasets:
+        data, labels = chaoda_datasets.read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
         for metric in metrics:
-            data, labels = chaoda_datasets.read(dataset, normalize=NORMALIZE, subsample=SUB_SAMPLE)
             min_points: int
             if len(data) < 1_000:
                 min_points = 1
@@ -77,6 +78,7 @@ def evaluate_auc(
                     criterion.LinearRegressionConstants([0.17663877, 0.15718700, 0.00676820, -0.42367319, 0.15126572, -0.49953437], mode=selection),  # SC
                 ]
 
+                logging.info(f'building manifold for {dataset}-{metric}-{selection}')
                 manifold = Manifold(data, METRICS[metric]).build(
                     criterion.MaxDepth(MAX_DEPTH),
                     criterion.MinPoints(min_points),
@@ -86,19 +88,22 @@ def evaluate_auc(
                 for i, graph in enumerate(manifold.graphs):
                     graph.method = methods[i % len(methods)]
 
-                ensemble_scores: List[float] = list()
-                for mode in modes:
-                    anomalies: Dict[int, float] = ensemble(manifold, mode)
-                    y_true, y_score = list(), list()
-                    [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
-                    ensemble_scores.append(roc_auc_score(y_true, y_score))
-
                 method_scores: List[float] = list()
+                individual_scores: List[Dict[int, float]] = list()
                 for graph in manifold.graphs:
                     anomalies: Dict[int, float] = METHODS[graph.method](graph)
+                    individual_scores.append(anomalies)
+
                     y_true, y_score = list(), list()
                     [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
                     method_scores.append(roc_auc_score(y_true, y_score))
+
+                ensemble_scores: List[float] = list()
+                for mode in modes:
+                    anomalies: Dict[int, float] = ensemble(individual_scores, mode)
+                    y_true, y_score = list(), list()
+                    [(y_true.append(labels[k]), y_score.append(v)) for k, v in anomalies.items()]
+                    ensemble_scores.append(roc_auc_score(y_true, y_score))
 
                 ensemble_scores: str = ','.join([f'{score:.3f}' for score in ensemble_scores])
                 method_scores: str = ','.join([f'{score:.3f}' for score in method_scores])

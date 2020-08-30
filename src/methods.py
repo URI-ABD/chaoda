@@ -194,18 +194,17 @@ METHODS = {
 }
 
 
-def ensemble(manifold: Manifold, mode: str) -> Dict[int, float]:
+def ensemble(individual_scores: List[Dict[int, float]], mode: str) -> Dict[int, float]:
     """ Builds ensemble model from given methods, using given option of combining scores.
 
-    :param manifold: manifold from which to calculate outlier scores
-    :param mode: how to combine scores. One of 'mean', 'product', 'max' or 'min'.
+    :param individual_scores: List of dictionaries containing outlier scores to be combined.
+    :param mode: how to combine scores. One of 'mean', 'product', 'max', 'min', 'max25' or 'min25'.
     """
-    assert mode in ENSEMBLE_MODES
+    if mode not in ENSEMBLE_MODES:
+        raise ValueError(f'mode must be one of {ENSEMBLE_MODES}. Got {mode} instead.')
 
-    scores: List[np.ndarray] = list()
-    for graph in manifold.graphs:
-        score: Dict[int, float] = METHODS[graph.method](graph)
-        scores.append(np.asarray([score[i] for i in range(len(score.keys()))], dtype=float))
+    scores: List[np.ndarray] = [np.asarray([score[i] for i in range(len(score.keys()))], dtype=float)
+                                for score in individual_scores]
 
     if mode == 'mean':
         means: np.ndarray = np.sum(scores, axis=0) / len(scores)
