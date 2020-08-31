@@ -89,7 +89,7 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     os.makedirs(RESULTS_PATH, exist_ok=True)
-    _filename = os.path.join(RESULTS_PATH, 'comparisons.csv')
+    _filename = os.path.join(RESULTS_PATH, 'pyod_comparisons.csv')
     with open(_filename, 'w') as _fp:
         _header = ','.join(MODELS.keys())
         _fp.write(f'dataset,{_header}\n')

@@ -10,7 +10,7 @@ from sklearn.metrics import roc_auc_score
 from src import datasets as chaoda_datasets
 from src.datasets import METRICS, DATASETS
 from src.methods import METHODS, ensemble, ENSEMBLE_MODES, METHOD_NAMES
-from src.utils import TRAIN_PATH
+from src.utils import RESULTS_PATH
 
 CONSTANTS = os.path.join(os.path.dirname(__file__), '..', 'train', 'linear_regression.csv')
 NORMALIZE = True
@@ -114,10 +114,10 @@ def evaluate_auc(
 
 if __name__ == "__main__":
     np.random.seed(42)
-    os.makedirs(TRAIN_PATH, exist_ok=True)
+    os.makedirs(RESULTS_PATH, exist_ok=True)
 
-    # _datasets = list(DATASETS.keys())
-    _datasets = ['cardio']
+    _datasets = list(DATASETS.keys())
+    # _datasets = ['cardio']
     _metrics = ['euclidean', 'manhattan']
     _selections = ['percentile', 'ranked']
     _methods = ['cluster_cardinality', 'hierarchical', 'k_neighborhood', 'subgraph_cardinality']
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     _means = ['amean', 'gmean', 'hmean']
     _method_labels = ','.join([f'{METHOD_NAMES[_n]}_{_m}' for _m in _means for _n in _methods])
 
-    _filename = os.path.join(TRAIN_PATH, 'ensemble_predictions.csv')
+    _filename = os.path.join(RESULTS_PATH, 'chaoda_predictions.csv')
     with open(_filename, 'w') as _fp:
         _fp.write(f'dataset,metric,selection,{_ensemble_labels},{_method_labels}\n')
 
