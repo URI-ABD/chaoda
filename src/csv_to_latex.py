@@ -10,10 +10,8 @@ METRIC_NAMES = ['euclidean', 'manhattan']
 METHOD_NAMES = ['CC', 'PC', 'KN', 'SC']
 ENSEMBLE_NAMES = ['mean', 'product', 'max', 'min', 'max25', 'min25']
 MEANS = ['amean', 'gmean', 'hmean']
-SELECTION_MODES = [
-    'percentile',
-    'ranked',
-]
+SELECTION_MODES = ['percentile', 'ranked']
+PYOD_EXCEPTIONS = ['LSCP', 'XGBOD']
 
 
 def row_to_latex(row: List[float], margin: float = 0.02) -> List[str]:
@@ -21,8 +19,40 @@ def row_to_latex(row: List[float], margin: float = 0.02) -> List[str]:
     return ['\\bfseries ' + f'{v:.2f}' if v >= threshold else f'{v:.2f}' for v in row]
 
 
-def pyod_to_latex(filename: str):
-    print(filename)
+def pyod_to_latex(filename: str, pyod_out: str):
+    pyod_dict: Dict[str, str] = dict()
+
+    with open(filename, 'r') as fp:
+        header = fp.readline().strip().split()[0]
+        column_names = ['\\textbf{' + name + '}' for name in header.split(',') if name not in PYOD_EXCEPTIONS]
+        for line in fp.readlines():
+            row = line.strip().split(',')
+            row = [v for v in row if 'Exception' != v]
+            for i in range(1, len(row)):
+                if 'Timeout' in row[i]:
+                    row[i] = '-1'
+            values = row_to_latex([float(v) for v in row[1:]])
+            for i in range(len(values)):
+                if '-1' in values[i]:
+                    values[i] = 'time'
+            pyod_dict[row[0]] = ' & '.join(values)
+
+    pyod_rows: List[str] = [
+        '\\begin{tabular}{|' + 'c|' * len(column_names) + '}',
+        '\\hline',
+        ' & '.join(column_names) + ' \\\\',
+        '\\hline',
+    ]
+    for dataset in sorted(pyod_dict.keys()):
+        if dataset in PYOD_EXCEPTIONS:
+            continue
+        dataset_name = '\\textbf{' + dataset + '}' if dataset in TRAIN_DATASETS else dataset
+        pyod_rows.extend([f'{dataset_name} & {pyod_dict[dataset]}' + ' \\\\', '\\hline'])
+
+    with open(pyod_out, 'w') as fp:
+        [fp.write(f'{line}\n') for line in pyod_rows]
+        fp.write('\\end{tabular}')
+
     return
 
 
@@ -40,7 +70,7 @@ def ensemble_to_latex(filename: str, ensemble_out: str):
     with open(filename, 'r') as fp:
         _ = fp.readline()
         for line in fp.readlines():
-            row = line.split(',')
+            row = line.strip().split(',')
             [dataset, metric, selection] = row[:3]
             values = row[3:3 + 6]
 
@@ -69,9 +99,9 @@ def ensemble_to_latex(filename: str, ensemble_out: str):
     footer = '\\end{tabular}'
 
     with open(ensemble_out, 'w') as fp:
-            [fp.write(f'{header}\n') for header in headers]
-            [fp.write(f'{row}\n') for row in ensemble_rows]
-            fp.write(footer)
+        [fp.write(f'{header}\n') for header in headers]
+        [fp.write(f'{row}\n') for row in ensemble_rows]
+        fp.write(footer)
     return
 
 
@@ -91,7 +121,7 @@ def individual_to_latex(filename: str, individual_out: str):
     with open(filename, 'r') as fp:
         _ = fp.readline()
         for line in fp.readlines():
-            row = line.split(',')
+            row = line.strip().split(',')
             [dataset, metric, selection] = row[:3]
             values = row[-12:]
 
@@ -132,16 +162,26 @@ def individual_to_latex(filename: str, individual_out: str):
     return
 
 
+def comparison_table(chaoda_results: str, pyod_results: str, comparisons_out: str):
+    ensemble, selection = 'mean', 'ranked'
+
+    return
+
+
 if __name__ == '__main__':
     os.makedirs(RESULTS_PATH, exist_ok=True)
 
     _chaoda_results = os.path.join(RESULTS_PATH, 'chaoda_predictions.csv')
+    _pyod_comparisons = os.path.join(RESULTS_PATH, 'pyod_comparisons.csv')
 
-    _ensemble_out = os.path.join(RESULTS_PATH, 'ensemble_table.txt')
-    ensemble_to_latex(_chaoda_results, _ensemble_out)
+    # _ensemble_out = os.path.join(RESULTS_PATH, 'ensemble_table.txt')
+    # ensemble_to_latex(_chaoda_results, _ensemble_out)
 
     # _individual_out = os.path.join(RESULTS_PATH, 'individual_table.txt')
     # individual_to_latex(_chaoda_results, _individual_out)
 
-    # _pyod_comparisons = os.path.join(RESULTS_PATH, 'pyod_comparisons.csv')
-    # pyod_to_latex(_pyod_comparisons)
+    _pyod_out = os.path.join(RESULTS_PATH, 'pyod_table.txt')
+    pyod_to_latex(_pyod_comparisons, _pyod_out)
+
+    # _comparisons_out = os.path.join(RESULTS_PATH, 'comparisons_table.txt')
+    # comparison_table(_chaoda_results, _pyod_comparisons, _comparisons_out)
