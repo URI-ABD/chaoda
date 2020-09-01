@@ -41,7 +41,7 @@ MODELS = {
     'LOCI': loci.LOCI,
     'LODA': loda.LODA,
     'LOF': lof.LOF,
-    'LSCP': lscp.LSCP,
+    # 'LSCP': lscp.LSCP,  # Exception
     'MCD': mcd.MCD,
     # 'MOGAAL': mo_gaal.MO_GAAL,  # need gpu
     'OCSVM': ocsvm.OCSVM,
@@ -49,11 +49,11 @@ MODELS = {
     # 'SOGAAL': so_gaal.SO_GAAL,  # need gpu
     'SOS': sos.SOS,
     # 'VAE': vae.VAE, # Disabled due to: "ValueError: The number of neurons should not exceed the number of features"
-    'XGBOD': xgbod.XGBOD,
+    # 'XGBOD': xgbod.XGBOD,  # Exception
 }
 
 
-@timeout(60)
+@timeout(600)
 def train_model(model, data):
     model.fit(data)
     return model.predict(data)
