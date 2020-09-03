@@ -1,12 +1,13 @@
 import os
 from pprint import pprint
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from src.datasets import DATASETS
 from src.utils import RESULTS_PATH
 
 TRAIN_DATASETS = ['annthyroid', 'mnist', 'pendigits', 'satellite', 'shuttle', 'thyroid']
 METRIC_NAMES = ['euclidean', 'manhattan']
+METRIC_SHORTS = {'euclidean': 'L2', 'manhattan': 'L1'}
 METHOD_NAMES = ['CC', 'PC', 'KN', 'SC']
 ENSEMBLE_NAMES = ['mean', 'product', 'max', 'min', 'max25', 'min25']
 MEANS = ['amean', 'gmean', 'hmean']
@@ -19,23 +20,34 @@ def row_to_latex(row: List[float], margin: float = 0.02) -> List[str]:
     return ['\\bfseries ' + f'{v:.2f}' if v >= threshold else f'{v:.2f}' for v in row]
 
 
-def pyod_to_latex(filename: str, pyod_out: str):
-    pyod_dict: Dict[str, str] = dict()
+def pyod_to_dict(filename: str) -> Tuple[Dict[str, List[float]], List[str]]:
+    pyod_dict: Dict[str, List[float]] = dict()
 
     with open(filename, 'r') as fp:
         header = fp.readline().strip().split()[0]
-        column_names = ['\\textbf{' + name + '}' for name in header.split(',') if name not in PYOD_EXCEPTIONS]
+        method_names: List[str] = [name for name in header.split(',')[1:] if name not in PYOD_EXCEPTIONS]
         for line in fp.readlines():
             row = line.strip().split(',')
             row = [v for v in row if 'Exception' != v]
             for i in range(1, len(row)):
                 if 'Timeout' in row[i]:
                     row[i] = '-1'
-            values = row_to_latex([float(v) for v in row[1:]])
-            for i in range(len(values)):
-                if '-1' in values[i]:
-                    values[i] = 'time'
-            pyod_dict[row[0]] = ' & '.join(values)
+            pyod_dict[row[0]] = [float(v) for v in row[1:]]
+
+    return pyod_dict, method_names
+
+
+def pyod_to_latex(filename: str, pyod_out: str):
+    pyod_dict, method_names = pyod_to_dict(filename)
+    column_names: List[str] = ['\\textbf{dataset}'] + ['\\textbf{' + name + '}' for name in method_names if name not in PYOD_EXCEPTIONS]
+
+    pyod_row_dict: Dict[str, str] = dict()
+    for dataset in pyod_dict.keys():
+        values = row_to_latex(pyod_dict[dataset])
+        for i in range(len(values)):
+            if '-1' in values[i]:
+                values[i] = '\\textit{time}'
+        pyod_row_dict[dataset] = ' & '.join(values)
 
     pyod_rows: List[str] = [
         '\\begin{tabular}{|' + 'c|' * len(column_names) + '}',
@@ -43,20 +55,19 @@ def pyod_to_latex(filename: str, pyod_out: str):
         ' & '.join(column_names) + ' \\\\',
         '\\hline',
     ]
-    for dataset in sorted(pyod_dict.keys()):
+    for dataset in sorted(pyod_row_dict.keys()):
         if dataset in PYOD_EXCEPTIONS:
             continue
         dataset_name = '\\textbf{' + dataset + '}' if dataset in TRAIN_DATASETS else dataset
-        pyod_rows.extend([f'{dataset_name} & {pyod_dict[dataset]}' + ' \\\\', '\\hline'])
+        pyod_rows.extend([f'{dataset_name} & {pyod_row_dict[dataset]}' + ' \\\\', '\\hline'])
 
     with open(pyod_out, 'w') as fp:
         [fp.write(f'{line}\n') for line in pyod_rows]
         fp.write('\\end{tabular}')
-
     return
 
 
-def ensemble_to_latex(filename: str, ensemble_out: str):
+def ensemble_to_dict(filename: str) -> Dict[str, Dict[str, Dict[str, Dict[str, float]]]]:
     ensemble_dict: Dict[str, Dict[str, Dict[str, Dict[str, float]]]] = {
         dataset: {
             metric: {
@@ -76,6 +87,11 @@ def ensemble_to_latex(filename: str, ensemble_out: str):
 
             for method, value in zip(ENSEMBLE_NAMES, values):
                 ensemble_dict[dataset][metric][selection][method] = float(value)
+    return ensemble_dict
+
+
+def ensemble_to_latex(filename: str, ensemble_out: str):
+    ensemble_dict: Dict[str, Dict[str, Dict[str, Dict[str, float]]]] = ensemble_to_dict(filename)
 
     column_names = ['dataset', 'metric'] + [name for _ in SELECTION_MODES for name in ENSEMBLE_NAMES]
     column_names = ['\\textbf{' + name + '}' for name in column_names]
@@ -165,6 +181,65 @@ def individual_to_latex(filename: str, individual_out: str):
 def comparison_table(chaoda_results: str, pyod_results: str, comparisons_out: str):
     ensemble, selection = 'mean', 'ranked'
 
+    ensemble_dict: Dict[str, Dict[str, Dict[str, Dict[str, float]]]] = ensemble_to_dict(chaoda_results)
+    pyod_dict, pyod_methods = pyod_to_dict(pyod_results)
+
+    def _helper(datasets: List[str], filename: str):
+        comparisons_dict: Dict[str, Dict[str, str]] = dict()
+        for dataset in datasets:
+            column_values: List[float] = [ensemble_dict[dataset][metric][selection][ensemble] for metric in METRIC_NAMES]
+            column_values.extend(pyod_dict[dataset])
+            column_values: List[str] = row_to_latex(column_values)
+
+            for i, metric in enumerate(METRIC_NAMES):
+                metric_short = f'ensemble-{METRIC_SHORTS[metric]}'
+                if metric_short not in comparisons_dict:
+                    comparisons_dict[metric_short] = dict()
+                comparisons_dict[metric_short][dataset] = column_values[i]
+            for method, value in zip(pyod_methods, column_values[len(METRIC_NAMES):]):
+                if method not in comparisons_dict:
+                    comparisons_dict[method] = dict()
+                comparisons_dict[method][dataset] = value
+
+        column_names = ['dataset'] + datasets.copy()
+        column_names = ['\\textbf{' + name + '}' for name in column_names]
+        headers = [
+            '\\begin{tabular}{|' + 'c|' * len(column_names) + '}',
+            '\\hline',
+            ' & '.join(column_names) + ' \\\\',
+            '\\hline',
+        ]
+
+        methods = [f'ensemble-{METRIC_SHORTS[metric]}' for metric in METRIC_NAMES] + pyod_methods.copy()
+        comparison_rows: List[str] = list()
+        for method in methods:
+            row: List[str] = [method] + [comparisons_dict[method][dataset] for dataset in datasets]
+            for i in range(len(row)):
+                if '-1' in row[i]:
+                    row[i] = '\\textit{time}'
+            comparison_rows.extend([' & '.join(row) + ' \\\\', '\\hline'])
+        footer = '\\end{tabular}'
+
+        with open(filename, 'w') as fp:
+            [fp.write(f'{header}\n') for header in headers]
+            [fp.write(f'{row}\n') for row in comparison_rows]
+            fp.write(footer)
+        return
+
+    first_datasets = TRAIN_DATASETS.copy()
+    first_filename = comparisons_out[:-4] + '_train.txt'
+    _helper(first_datasets, first_filename)
+
+    test_datasets = [dataset for dataset in DATASETS if dataset not in TRAIN_DATASETS]
+    split_dataset = 'mammography'
+
+    second_datasets = [dataset for dataset in test_datasets if dataset <= split_dataset]
+    second_filename = comparisons_out[:-4] + '_test_1.txt'
+    _helper(second_datasets, second_filename)
+
+    third_datasets = [dataset for dataset in test_datasets if dataset > split_dataset]
+    third_filename = comparisons_out[:-4] + '_test_2.txt'
+    _helper(third_datasets, third_filename)
     return
 
 
@@ -180,8 +255,8 @@ if __name__ == '__main__':
     # _individual_out = os.path.join(RESULTS_PATH, 'individual_table.txt')
     # individual_to_latex(_chaoda_results, _individual_out)
 
-    _pyod_out = os.path.join(RESULTS_PATH, 'pyod_table.txt')
-    pyod_to_latex(_pyod_comparisons, _pyod_out)
+    # _pyod_out = os.path.join(RESULTS_PATH, 'pyod_table.txt')
+    # pyod_to_latex(_pyod_comparisons, _pyod_out)
 
-    # _comparisons_out = os.path.join(RESULTS_PATH, 'comparisons_table.txt')
-    # comparison_table(_chaoda_results, _pyod_comparisons, _comparisons_out)
+    _comparisons_out = os.path.join(RESULTS_PATH, 'comparisons_table.txt')
+    comparison_table(_chaoda_results, _pyod_comparisons, _comparisons_out)
