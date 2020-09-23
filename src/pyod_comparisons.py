@@ -3,7 +3,9 @@ import warnings
 from typing import List
 
 import numpy as np
+# noinspection PyUnresolvedReferences
 from pyod.models import abod
+# noinspection PyUnresolvedReferences
 from pyod.models import auto_encoder
 from pyod.models import cblof
 from pyod.models import cof
@@ -14,14 +16,19 @@ from pyod.models import lmdd
 from pyod.models import loci
 from pyod.models import loda
 from pyod.models import lof
+# noinspection PyUnresolvedReferences
 from pyod.models import lscp
 from pyod.models import mcd
+# noinspection PyUnresolvedReferences
 from pyod.models import mo_gaal
 from pyod.models import ocsvm
+# noinspection PyUnresolvedReferences
 from pyod.models import so_gaal
 from pyod.models import sod
 from pyod.models import sos
+# noinspection PyUnresolvedReferences
 from pyod.models import vae
+# noinspection PyUnresolvedReferences
 from pyod.models import xgbod
 from sklearn.metrics import roc_auc_score
 

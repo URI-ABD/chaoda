@@ -2,7 +2,7 @@ from collections import deque
 from typing import Dict, List
 
 import numpy as np
-from pyclam.manifold import Cluster, Graph, Manifold
+from pyclam.manifold import Cluster, Graph
 from scipy.special import erf
 
 # TODO: Parent-Child radii ratios as proxy to anomalousness.

@@ -51,7 +51,7 @@ GREENGENES = {
 
 DATASETS = {
     'apogee2': APOGEE2,
-    'greegenes': GREENGENES,
+    'greengenes': GREENGENES,
 }
 
 
@@ -192,6 +192,6 @@ def explore_greengenes():
 
 if __name__ == '__main__':
     # build_manifold('apogee2', 'euclidean')
-    # build_manifold('greegenes', 'hamming')
+    # build_manifold('greengenes', 'hamming')
     # mutate_greengenes()
     explore_greengenes()
