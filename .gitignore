@@ -290,3 +290,12 @@ umaps
 embeddings
 normalized
 .chaoda
+out
+*.csv
+train
+results
+papers
+uci-data
+old_src
+clam
+src/explorations.py
