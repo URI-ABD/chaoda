@@ -8,7 +8,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.tree import DecisionTreeRegressor
 
-from datasets import DATASETS
+from datasets import DATASET_LINKS
 from datasets import read
 from pyclam import CHAODA
 from pyclam import Manifold
@@ -196,7 +196,7 @@ def write_meta_models(model_codes: Dict[str, str], out_path: str):
 if __name__ == '__main__':
     os.makedirs(TRAIN_DIR, exist_ok=True)
     _train_path = os.path.join(TRAIN_DIR, 'train.csv')
-    _datasets = list(DATASETS.keys())
+    _datasets = list(DATASET_LINKS.keys())
     # _datasets = ['vertebral']  # for testing
     create_data(_train_path, _datasets)
 

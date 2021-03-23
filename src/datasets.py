@@ -6,15 +6,14 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
+import pandas as pd
 from scipy.io import loadmat
 from scipy.io.matlab.miobase import MatReadError
 
 from pyclam.utils import normalize
 from utils import DATA_DIR
 
-# TODO: Several of these datasets are in sklearn.datasets. Try using those?
-# TODO: Try getting datasets from openml.org by using sklearn.datasets.fetch_openml
-DATASETS: Dict[str, str] = {
+DATASET_LINKS: Dict[str, str] = {
     'annthyroid': 'https://www.dropbox.com/s/aifk51owxbogwav/annthyroid.mat?dl=0',
     'arrhythmia': 'https://www.dropbox.com/s/lmlwuspn1sey48r/arrhythmia.mat?dl=0',
     'breastw': 'https://www.dropbox.com/s/g3hlnucj71kfvq4/breastw.mat?dl=0',
@@ -41,10 +40,21 @@ DATASETS: Dict[str, str] = {
     'wine': 'https://www.dropbox.com/s/uvjaudt2uto7zal/wine.mat?dl=0',
 }
 
+# TODO: Add these datasets:
+NEW_DATASETS: List[str] = [
+    'backdoor',
+    'campaign',
+    'celeba',
+    'census',
+    'donors',
+    'fraud',
+    'thyroid-21',
+]
+
 
 def get(dataset: str) -> str:
     """ Download the dataset if needed, and returns the filename used to store it. """
-    link = DATASETS[dataset]
+    link = DATASET_LINKS[dataset]
 
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR, exist_ok=True)
@@ -99,5 +109,29 @@ def read(
     return data, np.squeeze(labels)
 
 
+def csv_to_npy(
+    dataset: str,
+):
+    print(f'reading dataset {dataset}...')
+
+    abd_dir = '/data/abd'
+    csv_dir = os.path.join(abd_dir, 'csv_data')
+    npy_dir = os.path.join(abd_dir, 'chaoda_data')
+
+    csv_path = os.path.join(csv_dir, f'{dataset}.csv')
+    data_path = os.path.join(npy_dir, f'{dataset}.csv')
+    labels_path = os.path.join(npy_dir, f'{dataset}_labels.csv')
+    
+    raw_df = pd.read_csv(csv_path)
+    labels = np.asarray(raw_df['class'].values, dtype=np.uint8)
+
+    values_df = raw_df.drop(['class'], axis=1)
+    data = np.asarray(values_df.values, dtype=np.float32)
+    print(data.shape)
+    return
+
+
 if __name__ == '__main__':
-    list(map(read, DATASETS.keys()))
+    for _dataset in NEW_DATASETS:
+        csv_to_npy(_dataset)
+        # break

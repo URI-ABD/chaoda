@@ -5,7 +5,7 @@ from typing import List
 from sklearn.metrics import roc_auc_score
 
 import datasets
-from datasets import DATASETS
+from datasets import DATASET_LINKS
 # you can replace this next import with your own generated file to verify results
 from meta_models_trained import META_MODELS
 from pyclam import CHAODA
@@ -61,13 +61,13 @@ def run_chaoda(fast: bool):
     """
     scores_file = CHAODA_FAST_SCORES_PATH if fast else CHAODA_SCORES_PATH
     if not os.path.exists(scores_file):
-        labels = ','.join(DATASETS)
+        labels = ','.join(DATASET_LINKS)
         with open(scores_file, 'w') as fp:
             fp.write(f'model,{labels}\n')
 
     times_file = CHAODA_FAST_TIMES_PATH if fast else CHAODA_TIMES_PATH
     if not os.path.exists(times_file):
-        labels = ','.join(DATASETS)
+        labels = ','.join(DATASET_LINKS)
         with open(times_file, 'w') as fp:
             fp.write(f'model,{labels}\n')
 
@@ -76,7 +76,7 @@ def run_chaoda(fast: bool):
     # run model on all datasets
     performances: List[Tuple[float, float]] = [
         _score_dataset(dataset, False, fast)
-        for dataset in DATASETS
+        for dataset in DATASET_LINKS
     ]
 
     # write scores and times to file

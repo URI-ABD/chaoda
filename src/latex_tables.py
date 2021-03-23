@@ -2,7 +2,7 @@ from typing import List
 
 import pandas as pd
 
-from src.datasets import DATASETS
+from src.datasets import DATASET_LINKS
 from src.utils import *
 
 TRAIN_DATASETS: List[str] = [
@@ -121,7 +121,7 @@ def write_tables():
         return
 
     test_datasets = list(sorted([
-        dataset for dataset in DATASETS.keys()
+        dataset for dataset in DATASET_LINKS.keys()
         if dataset not in TRAIN_DATASETS
     ]))
     half_num = len(test_datasets) // 2
@@ -185,13 +185,13 @@ def get_latex_old(mode: str, pyod: bool, datasets: List[str]):
 
 
 def write_tables_old():
-    num_datasets = len(DATASETS.keys())
+    num_datasets = len(DATASET_LINKS.keys())
     step = num_datasets // 3
     chaoda_path = os.path.join(RESULTS_DIR, 'latex_chaoda')
     # pyod_path = os.path.join(RESULTS_DIR, 'latex_pyod')
 
     for i, j in enumerate(range(0, num_datasets, step)):
-        datasets = list(DATASETS.keys())[j: j + step]
+        datasets = list(DATASET_LINKS.keys())[j: j + step]
         path = f'{chaoda_path}_scores_{i + 1}.txt'
         with open(path, 'w') as fp:
             fp.write(get_latex_old('scores', False, datasets))

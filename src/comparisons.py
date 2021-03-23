@@ -27,6 +27,9 @@ from sklearn.metrics import roc_auc_score
 import datasets as chaoda_datasets
 from utils import *
 
+# TODO: Break out deep-learning based methods in a separate comparisons table.
+# TODO: Add the following deep-learning based methods to comparisons
+
 
 def _neurons(dataset):
     """ This sets up default shapes for neural-network based methods
@@ -128,7 +131,7 @@ if __name__ == "__main__":
     np.random.seed(42), random.seed(42)
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
-    _datasets = list(sorted(list(chaoda_datasets.DATASETS.keys())))
+    _datasets = list(sorted(list(chaoda_datasets.DATASET_LINKS.keys())))
     # _datasets = ['vertebral']  # for testing
 
     for _filename in [PYOD_SCORES_PATH, PYOD_TIMES_PATH]:
