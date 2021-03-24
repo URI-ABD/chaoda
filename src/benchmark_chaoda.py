@@ -2,13 +2,14 @@ import random
 from time import time
 from typing import List
 
+from pyclam import CHAODA
 from sklearn.metrics import roc_auc_score
 
 import datasets
 from datasets import DATASET_LINKS
+from datasets import OTHER_DATASETS
 # you can replace this next import with your own generated file to verify results
 from meta_models_trained import META_MODELS
-from pyclam import CHAODA
 from utils import *
 
 BASE_METHODS = {
@@ -56,37 +57,33 @@ def _score_dataset(dataset: str, renormalize: bool, fast: bool) -> Tuple[float, 
     return float(roc_auc_score(labels, detector.scores)), float(time() - start)
 
 
-def run_chaoda(fast: bool):
+def run_chaoda(dataset_names: List[str], fast: bool):
     """ Calculates anomaly scores for all datasets using the CHAODA class.
     """
+
     scores_file = CHAODA_FAST_SCORES_PATH if fast else CHAODA_SCORES_PATH
-    if not os.path.exists(scores_file):
-        labels = ','.join(DATASET_LINKS)
-        with open(scores_file, 'w') as fp:
-            fp.write(f'model,{labels}\n')
-
     times_file = CHAODA_FAST_TIMES_PATH if fast else CHAODA_TIMES_PATH
-    if not os.path.exists(times_file):
-        labels = ','.join(DATASET_LINKS)
-        with open(times_file, 'w') as fp:
-            fp.write(f'model,{labels}\n')
-
     model_name = 'CHAODA_FAST' if fast else 'CHAODA'
 
-    # run model on all datasets
-    performances: List[Tuple[float, float]] = [
-        _score_dataset(dataset, False, fast)
-        for dataset in DATASET_LINKS
-    ]
+    header_line = f'model,{",".join(dataset_names)}\n'
 
-    # write scores and times to file
-    scores: str = ','.join([f'{s:.2f}' for s, _ in performances])
-    times: str = ','.join([f'{t:.2f}' for _, t in performances])
+    scores_list = ['_' for _ in dataset_names]
+    times_list = ['_' for _ in dataset_names]
 
-    with open(scores_file, 'a') as fp:
-        fp.write(f'{model_name},{scores}\n')
-    with open(times_file, 'a') as fp:
-        fp.write(f'{model_name},{times}\n')
+    for i, dataset in enumerate(dataset_names):
+        s, t = _score_dataset(dataset, False, fast)
+        scores_list[i] = f'{s:.2f}'
+        times_list[i] = f'{t:.2f}'
+
+        # write scores and times to file
+        scores, times = ','.join(scores_list), ','.join(times_list)
+
+        with open(scores_file, 'w') as fp:
+            fp.writelines([header_line, f'{model_name},{scores}\n'])
+
+        with open(times_file, 'w') as fp:
+            fp.writelines([header_line, f'{model_name},{times}\n'])
+
     return
 
 
@@ -94,5 +91,7 @@ if __name__ == '__main__':
     np.random.seed(42), random.seed(42)
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    run_chaoda(fast=True)
+    _dataset_names = list(DATASET_LINKS.keys())
+    # run_chaoda(_dataset_names, fast=True)
+    run_chaoda(OTHER_DATASETS, fast=True)
     # run_chaoda(fast=False)  # uncomment this to run CHAODA without the speed heuristic

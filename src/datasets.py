@@ -6,11 +6,11 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
-import pandas as pd
+from pyclam.utils import normalize
 from scipy.io import loadmat
 from scipy.io.matlab.miobase import MatReadError
 
-from pyclam.utils import normalize
+from utils import ABD_DATA_DIR
 from utils import DATA_DIR
 
 DATASET_LINKS: Dict[str, str] = {
@@ -41,7 +41,7 @@ DATASET_LINKS: Dict[str, str] = {
 }
 
 # TODO: Add these datasets:
-NEW_DATASETS: List[str] = [
+OTHER_DATASETS: List[str] = [
     'backdoor',
     'campaign',
     'celeba',
@@ -78,20 +78,29 @@ def read(
     Returns the data and the labels.
     In the data, rows are instances, and columns are attributes.
     """
-    filename = get(dataset)
+    if dataset in DATASET_LINKS:
+        filename = get(dataset)
 
-    data_dict: Dict = dict()
-    try:
-        data_dict = loadmat(filename)
-    except (NotImplementedError, MatReadError):
-        import h5py
-        with h5py.File(filename, 'r') as fp:
-            for k, v in fp.items():
-                if k in ['X', 'y']:
-                    data_dict[k] = np.asarray(v, dtype=float).T
+        data_dict: Dict = dict()
+        try:
+            data_dict = loadmat(filename)
+        except (NotImplementedError, MatReadError):
+            import h5py
+            # noinspection PyUnresolvedReferences
+            with h5py.File(filename, 'r') as fp:
+                for k, v in fp.items():
+                    if k in ['X', 'y']:
+                        data_dict[k] = np.asarray(v, dtype=float).T
 
-    data: np.array = np.asarray(data_dict['X'], dtype=float)
-    labels: np.array = np.asarray(data_dict['y'], dtype=int)
+        data: np.array = np.asarray(data_dict['X'], dtype=float)
+        labels: np.array = np.asarray(data_dict['y'], dtype=int)
+    
+    elif dataset in OTHER_DATASETS:
+        data: np.array = np.load(os.path.join(ABD_DATA_DIR, f'{dataset}.npy'))
+        labels: np.array = np.load(os.path.join(ABD_DATA_DIR, f'{dataset}_labels.npy'))
+
+    else:
+        raise ValueError(f'dataset {dataset} not found.')
 
     if subsample is not None and subsample < data.shape[0]:
         outliers: List[int] = [i for i, j in enumerate(labels) if j == 1]
@@ -106,32 +115,9 @@ def read(
     if normalization_mode is not None:
         data = normalize(data, normalization_mode)
 
-    return data, np.squeeze(labels)
-
-
-def csv_to_npy(
-    dataset: str,
-):
-    print(f'reading dataset {dataset}...')
-
-    abd_dir = '/data/abd'
-    csv_dir = os.path.join(abd_dir, 'csv_data')
-    npy_dir = os.path.join(abd_dir, 'chaoda_data')
-
-    csv_path = os.path.join(csv_dir, f'{dataset}.csv')
-    data_path = os.path.join(npy_dir, f'{dataset}.csv')
-    labels_path = os.path.join(npy_dir, f'{dataset}_labels.csv')
-    
-    raw_df = pd.read_csv(csv_path)
-    labels = np.asarray(raw_df['class'].values, dtype=np.uint8)
-
-    values_df = raw_df.drop(['class'], axis=1)
-    data = np.asarray(values_df.values, dtype=np.float32)
-    print(data.shape)
-    return
+    return np.asarray(data, dtype=np.float32), np.asarray(np.squeeze(labels), dtype=np.uint8)
 
 
 if __name__ == '__main__':
-    for _dataset in NEW_DATASETS:
-        csv_to_npy(_dataset)
-        # break
+    print(f'downloadable datasets: {list(DATASET_LINKS.keys())}')
+    print(f'other datasets: {OTHER_DATASETS}')

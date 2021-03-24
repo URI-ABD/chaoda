@@ -9,6 +9,7 @@ from scipy.stats import gmean
 from scipy.stats import hmean
 
 SRC_DIR = os.path.abspath(os.path.dirname(__file__))
+ABD_DATA_DIR = '/data/abd/chaoda_data'
 DATA_DIR = os.path.join(SRC_DIR, 'data')
 CLAM_DIR = os.path.join(SRC_DIR, 'clam')
 TRAIN_DIR = os.path.join(SRC_DIR, 'train')
@@ -36,14 +37,14 @@ MEANS = {
 
 NORMALIZE = 'gaussian'
 SUB_SAMPLE = 64_000  # for testing the implementation
-MAX_DEPTH = 50  # even though no dataset reaches this far
+MAX_DEPTH = 25  # even though no dataset reaches this far
 
 
 def print_blurb(model: str, dataset: str, shape: Tuple[int, int]):
     print()
     print('-' * 80)
     print()
-    print(f'Running model {model} on dataset {dataset} with shape {shape}.')
+    print(f'Running model {model} on dataset \'{dataset}\' with shape {shape}.')
     print()
     print('-' * 80)
     return
