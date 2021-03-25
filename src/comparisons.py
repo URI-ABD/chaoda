@@ -29,6 +29,14 @@ from utils import *
 
 # TODO: Break out deep-learning based methods in a separate comparisons table.
 # TODO: Add the following deep-learning based methods to comparisons
+#  REPEN: Code bugs out because authors did not provide information on recreating their environment and version numbers for keras/tensorflow
+#  DAGMM: Deep Autoencoder with Gaussian Mixture Model. Can't find source code from authors
+#  RDP: Random Distance Predicting. https://github.com/billhhh/RDP/
+#  AE-1SVM: https://github.com/minh-nghia/AE-1SVM  This would be a lot of work to get running because
+#                                                  the authors have a separate jupyter notebook for each dataset.
+#  DEC: Deep Embedded Clustering. https://github.com/piiswrong/dec  Implementation uses a custom build of Caffe from berkeley
+#  APE: can;t find source code
+#  AEHE: Source code is in Korean
 
 
 def _neurons(dataset):

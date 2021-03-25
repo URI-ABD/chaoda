@@ -107,7 +107,7 @@ def read(
         inliers: List[int] = [i for i, j in enumerate(labels) if j == 0]
 
         samples: List[int] = list(np.random.choice(outliers, int(subsample * (len(outliers) / data.shape[0])), replace=False))
-        samples.extend(list(np.random.choice(inliers, int(subsample * (len(inliers) / data.shape[0])), replace=False)))
+        samples.extend(list(np.random.choice(inliers, 1 + int(subsample * (len(inliers) / data.shape[0])), replace=False)))
 
         data = np.asarray(data[samples], dtype=float)
         labels = np.asarray(labels[samples], dtype=int)
