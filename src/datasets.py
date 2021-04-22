@@ -10,7 +10,6 @@ from pyclam.utils import normalize
 from scipy.io import loadmat
 from scipy.io.matlab.miobase import MatReadError
 
-from utils import ABD_DATA_DIR
 from utils import DATA_DIR
 
 DATASET_LINKS: Dict[str, str] = {
@@ -50,11 +49,49 @@ OTHER_DATASETS: List[str] = [
     'fraud',
     'thyroid-21',
 ]
+SHORT_NAMES = {
+    'annthyroid': 'ANNTH.',
+    'arrhythmia': 'ARRH.',
+    'breastw': 'BRE.W',
+    'cardio': 'CARD.',
+    'cover': 'COVER',
+    'glass': 'GLASS',
+    'http': 'HTTP',
+    'ionosphere': 'IONO.',
+    'lympho': 'LYMP.',
+    'mammography': 'MAMMO.',
+    'mnist': 'MNIST',
+    'musk': 'MUSK',
+    'optdigits': 'O.DIG.',
+    'pendigits': 'P.DIG.',
+    'pima': 'PIMA',
+    'satellite': 'SATL.',
+    'satimage-2': 'SAT.I-2',
+    'shuttle': 'SHUTTLE',
+    'smtp': 'SMTP.',
+    'thyroid': 'THYR.',
+    'vertebral': 'VERT.',
+    'vowels': 'VOWELS',
+    'wbc': 'WBC',
+    'wine': 'WINE',
+    'backdoor': 'BACKDOOR',
+    'campaign': 'CAMPAIGN',
+    'celeba': 'CELEBA',
+    'census': 'CENSUS',
+    'donors': 'DONORS',
+    'fraud': 'FRAUD',
+    'thyroid-21': 'THYROID-21',
+}
+
+DATASET_NAMES = list(DATASET_LINKS.keys())
+DATASET_NAMES.extend(OTHER_DATASETS)
 
 
-def get(dataset: str) -> str:
+def get(dataset: str):
     """ Download the dataset if needed, and returns the filename used to store it. """
     link = DATASET_LINKS[dataset]
+    data_path = os.path.join(DATA_DIR, f'{dataset}.npy')
+    labels_path = os.path.join(DATA_DIR, f'{dataset}_labels.npy')
 
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR, exist_ok=True)
@@ -66,21 +103,7 @@ def get(dataset: str) -> str:
     if not os.path.exists(filename):
         raise ValueError(f'Could not get dataset {dataset}.')
 
-    return filename
-
-
-def read(
-        dataset: str,
-        normalization_mode: Optional[str] = None,
-        subsample: Optional[int] = None,
-) -> Tuple[np.array, np.array]:
-    """ Read and preparse the dataset.
-    Returns the data and the labels.
-    In the data, rows are instances, and columns are attributes.
-    """
     if dataset in DATASET_LINKS:
-        filename = get(dataset)
-
         data_dict: Dict = dict()
         try:
             data_dict = loadmat(filename)
@@ -92,15 +115,33 @@ def read(
                     if k in ['X', 'y']:
                         data_dict[k] = np.asarray(v, dtype=float).T
 
-        data: np.array = np.asarray(data_dict['X'], dtype=float)
-        labels: np.array = np.asarray(data_dict['y'], dtype=int)
-    
-    elif dataset in OTHER_DATASETS:
-        data: np.array = np.load(os.path.join(ABD_DATA_DIR, f'{dataset}.npy'))
-        labels: np.array = np.load(os.path.join(ABD_DATA_DIR, f'{dataset}_labels.npy'))
+        np.save(data_path, np.asarray(data_dict['X'], dtype=np.float32))
+        np.save(labels_path, np.asarray(data_dict['y'], dtype=np.uint8))
 
-    else:
+    elif dataset not in OTHER_DATASETS:
+        # TODO: Figure out how to download these
         raise ValueError(f'dataset {dataset} not found.')
+
+    return
+
+
+def read(
+        dataset: str,
+        normalization_mode: Optional[str] = None,
+        subsample: Optional[int] = None,
+) -> Tuple[np.array, np.array]:
+    """ Read and preparse the dataset.
+    Returns the data and the labels.
+    In the data, rows are instances, and columns are attributes.
+    """
+    data_path = os.path.join(DATA_DIR, f'{dataset}.npy')
+    labels_path = os.path.join(DATA_DIR, f'{dataset}_labels.npy')
+
+    if not os.path.exists(data_path):
+        get(dataset)
+
+    data: np.array = np.load(data_path)
+    labels: np.array = np.load(labels_path)
 
     if subsample is not None and subsample < data.shape[0]:
         outliers: List[int] = [i for i, j in enumerate(labels) if j == 1]
