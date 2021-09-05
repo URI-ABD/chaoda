@@ -1,4 +1,3 @@
-import os
 from typing import List
 
 import pandas as pd
@@ -106,7 +105,7 @@ def get_latex(mode: str, datasets: List[str]):
 
 
 def write_tables():
-    out_path = os.path.join(utils.RESULTS_DIR, 'latex')
+    out_path = str(utils.RESULTS_DIR.joinpath('latex'))
 
     def _write_tables(name: str, datasets: List[str]):
         path = f'{out_path}_scores_{name}.txt'
@@ -124,7 +123,6 @@ def write_tables():
     _write_tables('train', TRAIN_DATASETS)
     _write_tables('test_1', TEST_DATASETS[:half_num])
     _write_tables('test_2', TEST_DATASETS[half_num:])
-    # _write_tables('test_3', chaoda_datasets.OTHER_DATASETS)
     return
 
 

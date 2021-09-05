@@ -1,15 +1,18 @@
-import os
+from pathlib import Path
 from typing import Tuple
 
-SRC_DIR = os.path.abspath(os.path.dirname(__file__))
-ROOT_DIR = os.path.dirname(SRC_DIR)
-DATA_DIR = os.path.join(ROOT_DIR, 'data')
-RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
-PLOTS_DIR = os.path.join(ROOT_DIR, 'plots')
-UMAPS_DIR = os.path.join(ROOT_DIR, 'umaps')
+import pandas as pd
 
-SCORES_PATH = os.path.join(RESULTS_DIR, 'scores.csv')
-TIMES_PATH = os.path.join(RESULTS_DIR, 'times.csv')
+import datasets
+
+ROOT_DIR = Path(__file__).parent.parent.resolve()
+DATA_DIR = ROOT_DIR.joinpath('data')
+RESULTS_DIR = ROOT_DIR.joinpath('results')
+PLOTS_DIR = ROOT_DIR.joinpath('plots')
+UMAPS_DIR = ROOT_DIR.joinpath('umaps')
+
+SCORES_PATH = RESULTS_DIR.joinpath('scores.csv')
+TIMES_PATH = RESULTS_DIR.joinpath('times.csv')
 
 METRICS = ['cityblock', 'euclidean']
 NORMALIZE = 'gaussian'
@@ -18,10 +21,7 @@ MAX_DEPTH = 50  # even though no dataset reaches this far
 
 
 def get_dataframes():
-    import datasets
-    import pandas as pd
-
-    if not os.path.exists(SCORES_PATH):
+    if not SCORES_PATH.exists():
         scores_df = pd.DataFrame(columns=datasets.DATASET_NAMES)
         scores_df.index.name = 'model'
         times_df = pd.DataFrame(columns=datasets.DATASET_NAMES)

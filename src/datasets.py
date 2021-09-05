@@ -1,16 +1,23 @@
-import os
 import subprocess
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 
-import numpy as np
+import h5py
+import numpy
 from pyclam.utils import normalize
 from scipy.io import loadmat
 from scipy.io.matlab.miobase import MatReadError
 
 from utils import DATA_DIR
+
+__all__ = [
+    'DATASET_LINKS',
+    'DATASET_NAMES',
+    'SHORT_NAMES',
+    'read',
+]
 
 DATASET_LINKS: Dict[str, str] = {
     'annthyroid': 'https://www.dropbox.com/s/aifk51owxbogwav/annthyroid.mat?dl=0',
@@ -39,16 +46,6 @@ DATASET_LINKS: Dict[str, str] = {
     'wine': 'https://www.dropbox.com/s/uvjaudt2uto7zal/wine.mat?dl=0',
 }
 
-# TODO: Add these datasets:
-OTHER_DATASETS: List[str] = [
-    'backdoor',
-    'campaign',
-    'celeba',
-    'census',
-    'donors',
-    'fraud',
-    'thyroid-21',
-]
 SHORT_NAMES = {
     'annthyroid': 'ANNTH.',
     'arrhythmia': 'ARRH.',
@@ -74,54 +71,39 @@ SHORT_NAMES = {
     'vowels': 'VOWELS',
     'wbc': 'WBC',
     'wine': 'WINE',
-    'backdoor': 'BACKDOOR',
-    'campaign': 'CAMPAIGN',
-    'celeba': 'CELEBA',
-    'census': 'CENSUS',
-    'donors': 'DONORS',
-    'fraud': 'FRAUD',
-    'thyroid-21': 'THYROID-21',
 }
 
 DATASET_NAMES = list(DATASET_LINKS.keys())
-DATASET_NAMES.extend(OTHER_DATASETS)
 
 
 def get(dataset: str):
     """ Download the dataset if needed, and returns the filename used to store it. """
     link = DATASET_LINKS[dataset]
-    data_path = os.path.join(DATA_DIR, f'{dataset}.npy')
-    labels_path = os.path.join(DATA_DIR, f'{dataset}_labels.npy')
+    data_path = DATA_DIR.joinpath(f'{dataset}.npy')
+    labels_path = DATA_DIR.joinpath(f'{dataset}_labels.npy')
 
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR, exist_ok=True)
+    if not DATA_DIR.exists():
+        DATA_DIR.mkdir()
 
-    filename = os.path.join(DATA_DIR, f'{dataset}.mat')
-    if not os.path.exists(filename):
+    filename = DATA_DIR.joinpath(f'{dataset}.mat')
+    if not filename.exists():
         subprocess.run(['wget', link, '-O', filename])
 
-    if not os.path.exists(filename):
+    if not filename.exists():
         raise ValueError(f'Could not get dataset {dataset}.')
 
-    if dataset in DATASET_LINKS:
-        data_dict: Dict = dict()
-        try:
-            data_dict = loadmat(filename)
-        except (NotImplementedError, MatReadError):
-            import h5py
-            # noinspection PyUnresolvedReferences
-            with h5py.File(filename, 'r') as fp:
-                for k, v in fp.items():
-                    if k in ['X', 'y']:
-                        data_dict[k] = np.asarray(v, dtype=float).T
+    data_dict: Dict = dict()
+    try:
+        data_dict = loadmat(filename)
+    except (NotImplementedError, MatReadError):
+        # noinspection PyUnresolvedReferences
+        with h5py.File(filename, 'r') as fp:
+            for k, v in fp.items():
+                if k in ['X', 'y']:
+                    data_dict[k] = numpy.asarray(v, dtype=float).T
 
-        np.save(data_path, np.asarray(data_dict['X'], dtype=np.float32))
-        np.save(labels_path, np.asarray(data_dict['y'], dtype=np.uint8))
-
-    elif dataset not in OTHER_DATASETS:
-        # TODO: Figure out how to download these
-        raise ValueError(f'dataset {dataset} not found.')
-
+    numpy.save(data_path, numpy.asarray(data_dict['X'], dtype=numpy.float32))
+    numpy.save(labels_path, numpy.asarray(data_dict['y'], dtype=numpy.uint8))
     return
 
 
@@ -129,36 +111,31 @@ def read(
         dataset: str,
         normalization_mode: Optional[str] = None,
         subsample: Optional[int] = None,
-) -> Tuple[np.array, np.array]:
+) -> Tuple[numpy.ndarray, numpy.ndarray]:
     """ Read and preparse the dataset.
     Returns the data and the labels.
     In the data, rows are instances, and columns are attributes.
     """
-    data_path = os.path.join(DATA_DIR, f'{dataset}.npy')
-    labels_path = os.path.join(DATA_DIR, f'{dataset}_labels.npy')
+    data_path = DATA_DIR.joinpath(f'{dataset}.npy')
+    labels_path = DATA_DIR.joinpath(f'{dataset}_labels.npy')
 
-    if not os.path.exists(data_path):
+    if not data_path.exists():
         get(dataset)
 
-    data: np.array = np.load(data_path)
-    labels: np.array = np.load(labels_path)
+    data: numpy.array = numpy.load(data_path)
+    labels: numpy.array = numpy.load(labels_path)
 
     if subsample is not None and subsample < data.shape[0]:
         outliers: List[int] = [i for i, j in enumerate(labels) if j == 1]
         inliers: List[int] = [i for i, j in enumerate(labels) if j == 0]
 
-        samples: List[int] = list(np.random.choice(outliers, int(subsample * (len(outliers) / data.shape[0])), replace=False))
-        samples.extend(list(np.random.choice(inliers, 1 + int(subsample * (len(inliers) / data.shape[0])), replace=False)))
+        samples: List[int] = list(numpy.random.choice(outliers, int(subsample * (len(outliers) / data.shape[0])), replace=False))
+        samples.extend(list(numpy.random.choice(inliers, 1 + int(subsample * (len(inliers) / data.shape[0])), replace=False)))
 
-        data = np.asarray(data[samples], dtype=float)
-        labels = np.asarray(labels[samples], dtype=int)
+        data = numpy.asarray(data[samples], dtype=float)
+        labels = numpy.asarray(labels[samples], dtype=int)
 
     if normalization_mode is not None:
         data = normalize(data, normalization_mode)
 
-    return np.asarray(data, dtype=np.float32), np.asarray(np.squeeze(labels), dtype=np.uint8)
-
-
-if __name__ == '__main__':
-    print(f'downloadable datasets: {list(DATASET_LINKS.keys())}')
-    print(f'other datasets: {OTHER_DATASETS}')
+    return numpy.asarray(data, dtype=numpy.float32), numpy.asarray(numpy.squeeze(labels), dtype=numpy.uint8)

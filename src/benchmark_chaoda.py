@@ -1,16 +1,16 @@
 import random
 from time import time
+from typing import Callable
 from typing import List
 from typing import Optional
 
-import numpy as np
+import numpy
 from pyclam import CHAODA
 from sklearn.metrics import roc_auc_score
 
-import datasets
 # You can replace this next import with your own generated file to verify results.
 #  Remember to change the parsing for META_MODELS just below.
-# import meta_models_trained
+# import custom_meta_models as meta_models
 import meta_models
 from utils import *
 
@@ -21,24 +21,24 @@ _NORMALIZATIONS = [
     'sigmoid',
 ]
 
-META_MODELS = [
+META_MODELS: List[Tuple[str, str, Callable[[numpy.array], float]]] = [
     # tuple of (metric, method, function)
-    (name.split('_')[2], '_'.join(name.split('_')[3:]), method)
+    (name.split('_')[1], '_'.join(name.split('_')[2:]), method)
     for name, method in meta_models.META_MODELS.items()
 ]
 
 
-def _score_dataset(dataset: str, fast: bool, report_individual: Optional[str]) -> Tuple[float, float]:
+def _bench_dataset(dataset: str, fast: bool, individuals_csv_path: Optional[Path]) -> Tuple[float, float]:
     """ Runs CHAODA on the dataset and returns the tuple of (auc-score, time-taken).
 
     :param dataset: Name of the dataset to benchmark
     :param fast: Whether to use the speed heuristic
-    :param report_individual:
+    :param individuals_csv_path:
     """
     data, labels = datasets.read(dataset, None, None)
-    name = 'CHAODA-Fast' if fast else 'CHAODA'
-    print_blurb(name, dataset, data.shape)
-    speed_threshold = max(128, int(np.sqrt(len(labels)))) if fast else None
+    chaoda_name = 'CHAODA-Fast' if fast else 'CHAODA'
+    print_blurb(chaoda_name, dataset, data.shape)
+    speed_threshold = max(128, int(numpy.sqrt(len(labels)))) if fast else None
     print(f'speed threshold set to {speed_threshold}')
 
     start = time()
@@ -46,15 +46,15 @@ def _score_dataset(dataset: str, fast: bool, report_individual: Optional[str]) -
         metrics=METRICS,
         max_depth=MAX_DEPTH,
         min_points=assign_min_points(data.shape[0]),
-        meta_ml_functions=META_MODELS,
+        meta_ml_functions=list((method, model) for _, method, model in META_MODELS),
         speed_threshold=speed_threshold,
     ).fit(data=data)
 
-    if report_individual is not None:
+    if individuals_csv_path is not None:
         # Print individual method scores.
 
-        if not os.path.exists(report_individual):
-            with open(report_individual, 'w') as fp:
+        if not individuals_csv_path.exists():
+            with open(individuals_csv_path, 'w') as individuals_csv:
                 columns = ','.join([
                     'dataset',
                     'cardinality',
@@ -67,17 +67,17 @@ def _score_dataset(dataset: str, fast: bool, report_individual: Optional[str]) -
                     'method',
                     'auc_roc',
                 ])
-                fp.write(f'{columns}\n')
+                individuals_csv.write(f'{columns}\n')
 
         index = 0
         # noinspection PyProtectedMember
-        for method_name, graph in detector._graphs:
+        for method_name, graph in detector._method_graphs:
             # noinspection PyProtectedMember
             scores = detector._individual_scores[index]
             auc = roc_auc_score(labels, scores)
             index += 1
 
-            with open(report_individual, 'a') as fp:
+            with open(individuals_csv_path, 'a') as individuals_csv:
                 features = ','.join([
                     dataset,
                     f'{data.shape[0]}',
@@ -90,21 +90,24 @@ def _score_dataset(dataset: str, fast: bool, report_individual: Optional[str]) -
                     method_name,
                     f'{auc:.2f}',
                 ])
-                fp.write(f'{features}\n')
+                individuals_csv.write(f'{features}\n')
 
     # Carry on with the ensemble.
     return float(roc_auc_score(labels, detector.scores)), float(time() - start)
 
 
-def run_chaoda(dataset_names: List[str], fast: bool, report_individual: str = None):
+def _bench_chaoda(dataset_names: List[str], fast: bool, report_individual: Optional[Path] = None):
     """ Calculates anomaly scores for all datasets using the CHAODA class.
     """
     scores_df, times_df = get_dataframes()
     model_name = 'CHAODA_FAST' if fast else 'CHAODA'
+
     for i, dataset in enumerate(dataset_names):
-        s, t = _score_dataset(dataset, fast, report_individual)
-        scores_df.at[model_name, dataset] = s
-        times_df.at[model_name, dataset] = t
+        roc_score, time_taken = _bench_dataset(dataset, fast, report_individual)
+
+        scores_df.at[model_name, dataset] = roc_score
+        times_df.at[model_name, dataset] = time_taken
+
         scores_df.to_csv(SCORES_PATH, float_format='%.2f')
         times_df.to_csv(TIMES_PATH, float_format='%.2e')
 
@@ -112,15 +115,15 @@ def run_chaoda(dataset_names: List[str], fast: bool, report_individual: str = No
 
 
 if __name__ == '__main__':
-    np.random.seed(42), random.seed(42)
-    os.makedirs(RESULTS_DIR, exist_ok=True)
-    os.makedirs(DATA_DIR, exist_ok=True)
-    _individual_scores_path = os.path.join(RESULTS_DIR, 'individual_scores.csv')
-    _datasets = datasets.DATASET_NAMES
-    # _datasets = ['vertebral']
+    numpy.random.seed(42), random.seed(42)
+    RESULTS_DIR.mkdir(exist_ok=True)
+    DATA_DIR.mkdir(exist_ok=True)
+    _individual_scores_path = RESULTS_DIR.joinpath('individual_scores.csv')
+    _dataset_names = datasets.DATASET_NAMES
+    # _dataset_names = ['vertebral']
 
-    run_chaoda(
-        dataset_names=_datasets,
+    _bench_chaoda(
+        dataset_names=_dataset_names,
         fast=True,  # Set this to False to ignore the speed heuristic
         report_individual=_individual_scores_path,
     )

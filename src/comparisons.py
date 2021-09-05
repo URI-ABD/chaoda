@@ -1,10 +1,9 @@
 import random
 import time
 import warnings
-from collections import Counter
 from typing import List
 
-import numpy as np
+import numpy
 from pyod.models import abod
 from pyod.models import auto_encoder
 from pyod.models import cblof
@@ -26,7 +25,7 @@ from pyod.models import vae
 from sklearn.metrics import roc_auc_score
 
 import datasets as chaoda_datasets
-from utils import *
+import utils
 
 
 # TODO: Break out deep-learning based methods in a separate comparisons table.
@@ -41,7 +40,7 @@ from utils import *
 #  AEHE: Source code is in Korean
 
 
-def _neurons(dataset):
+def _neurons(dataset: numpy.ndarray):
     """ This sets up default shapes for neural-network based methods
     that would crash without this as input.
     We allow for deeper networks for larger datasets.
@@ -102,8 +101,8 @@ def run_model(model_name: str, datasets: List[str], max_time: int = 36_000):
     signal.signal(signal.SIGALRM, timeout_handler)
 
     for dataset in datasets:
-        data, labels = chaoda_datasets.read(dataset, NORMALIZE, SUB_SAMPLE)
-        print_blurb(model_name, dataset, data.shape)
+        data, labels = chaoda_datasets.read(dataset, utils.NORMALIZE, utils.SUB_SAMPLE)
+        utils.print_blurb(model_name, dataset, data.shape)
 
         contamination: float = 0.1  # This is the default set by the authors of pyOD.
         # This is supposed to be the fraction of points that are outliers. We feel that
@@ -115,28 +114,37 @@ def run_model(model_name: str, datasets: List[str], max_time: int = 36_000):
         # noinspection PyBroadException
         try:
             model = MODELS[model_name](data, contamination)
+
             start = time.time()
+
             model.fit(data)
             rankings = model.predict(data)
+
             time_taken = float(time.time() - start)
+
             score = roc_auc_score(labels, rankings)
+
         except TimeoutException:
             score, time_taken = 'TO', 'TO'
+
         except Exception as _:
             score, time_taken = 'EX', 'EX'
 
-        scores_df, times_df = get_dataframes()
+        scores_df, times_df = utils.get_dataframes()
+
         scores_df.at[model_name, dataset] = score
         times_df.at[model_name, dataset] = time_taken
-        scores_df.to_csv(SCORES_PATH, float_format='%.2f')
-        times_df.to_csv(TIMES_PATH, float_format='%.2e')
+
+        scores_df.to_csv(utils.SCORES_PATH, float_format='%.2f')
+        times_df.to_csv(utils.TIMES_PATH, float_format='%.2e')
+
     return
 
 
 if __name__ == "__main__":
     warnings.filterwarnings('ignore')
-    np.random.seed(42), random.seed(42)
+    numpy.random.seed(42), random.seed(42)
+    utils.RESULTS_DIR.mkdir(exist_ok=True)
 
-    os.makedirs(RESULTS_DIR, exist_ok=True)
     for _name in MODELS:
         run_model(_name, chaoda_datasets.DATASET_NAMES, 600)
