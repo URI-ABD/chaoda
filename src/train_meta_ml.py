@@ -9,7 +9,6 @@ from pyclam import CHAODA
 from pyclam import Cluster
 from pyclam import Graph
 from pyclam import Manifold
-from pyclam.chaoda import ClusterScores
 from pyclam.criterion import MetaMLSelect
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
@@ -37,16 +36,13 @@ SAMPLING_DATASETS = [
 NOT_NORMALIZED = {
     'shuttle',
 }
-FEATURE_NAMES = [
-    'cardinality',
-    'radius',
-    'lfd',
-]
-FEATURE_NAMES.extend([f'{_name}_ema' for _name in FEATURE_NAMES])
+FEATURE_NAMES = ['cardinality', 'radius', 'lfd']
+FEATURE_NAMES.extend(f'{_name}_ema' for _name in FEATURE_NAMES)
 
 
 def extract_dt(tree: DecisionTreeRegressor, metric: str, method: str) -> str:
-    """ Just a bit of meta-programming. Don't question the black magic wielded here. """
+    """ Just a bit of meta-programming. Do not question the black magic wielded herein.
+    """
     # noinspection PyProtectedMember
     from sklearn.tree import _tree
 
@@ -54,6 +50,8 @@ def extract_dt(tree: DecisionTreeRegressor, metric: str, method: str) -> str:
         FEATURE_NAMES[i] if i != _tree.TREE_UNDEFINED else "undefined!"
         for i in tree.tree_.feature
     ]
+
+    # start function definition
     tree_code: List[str] = [
         f'def dt_{metric}_{method}(ratios: numpy.ndarray) -> float:',
         f'    {", ".join(FEATURE_NAMES)} = tuple(ratios)',
@@ -62,15 +60,17 @@ def extract_dt(tree: DecisionTreeRegressor, metric: str, method: str) -> str:
     def extract_lines(node, depth):
         indent = "    " * depth
         if tree.tree_.feature[node] != _tree.TREE_UNDEFINED:
-            name = feature_name[node]
-            threshold = tree.tree_.threshold[node]
+            name, threshold = feature_name[node], tree.tree_.threshold[node]
+
+            # if block
             tree_code.append(f'{indent}if {name} <= {threshold:.6e}:')
-
             extract_lines(tree.tree_.children_left[node], depth + 1)
-            tree_code.append(f'{indent}else:')
 
+            # else block
+            tree_code.append(f'{indent}else:')
             extract_lines(tree.tree_.children_right[node], depth + 1)
         else:
+            # return
             tree_code.append(f'{indent}return {tree.tree_.value[node][0][0]:.6e}')
 
     extract_lines(0, 1)
@@ -81,7 +81,7 @@ def extract_lr(model: LinearRegression, metric: str, method: str):
     coefficients = [f'{float(c):.6e}' for c in model.coef_]
     return '\n'.join([
         f'def from_lr_{metric}_{method}(ratios: numpy.ndarray) -> float:',
-        f'    return float(np.dot(np.asarray(',
+        f'    return float(numpy.dot(numpy.asarray(',
         f'        a=[{", ".join(coefficients)}],',
         f'        dtype=float,',
         f'    ), ratios))'
@@ -89,19 +89,24 @@ def extract_lr(model: LinearRegression, metric: str, method: str):
 
 
 def _build_data(
-        method: Callable[[Graph], Dict[Cluster, float]],
+        method_function: Callable[[Graph], Dict[Cluster, float]],
         graph: Graph,
         manifold: Manifold,
         labels: numpy.ndarray,
 ):
-    cluster_scores: ClusterScores = method(graph)
+    cluster_scores = list((cluster, score) for cluster, score in method_function(graph).items())
+
     train_x = numpy.zeros(shape=(len(cluster_scores), 6), dtype=numpy.float32)
     train_y = numpy.zeros(shape=(len(cluster_scores),))
-    for i, (cluster, score) in enumerate(cluster_scores.items()):
+
+    for i, (cluster, score) in enumerate(cluster_scores):
         train_x[i] = manifold.cluster_ratios(cluster)
-        y_pred = numpy.asarray([score for _ in cluster.argpoints], dtype=numpy.float32)
-        y_true = numpy.asarray([labels[p] for p in cluster.argpoints], dtype=numpy.float32)
-        loss = numpy.sum(numpy.mean(numpy.square(y_pred - y_true))) / cluster.cardinality
+
+        y_true = numpy.asarray(labels[cluster.argpoints], dtype=numpy.float32)
+
+        # TODO: Why was this numpy.sum instead of float?
+        loss = float(numpy.mean(numpy.square(score - y_true))) / cluster.cardinality
+
         train_y[i] = 1. - loss
 
     return train_x, train_y
@@ -115,11 +120,11 @@ def train_models(train_datasets: List[str], num_epochs: int) -> Dict[str, str]:
         }
         for metric_name in utils.METRICS
     }
-    train_x_dict: Dict[str, Dict[str, List[numpy.ndarray]]] = {
+    train_x_dict: Dict[str, Dict[str, numpy.ndarray]] = {
         metric_name: {method_name: list() for method_name in CHAODA.method_names}
         for metric_name in utils.METRICS
     }
-    train_y_dict: Dict[str, Dict[str, List[numpy.ndarray]]] = {
+    train_y_dict: Dict[str, Dict[str, numpy.ndarray]] = {
         metric_name: {method_name: list() for method_name in CHAODA.method_names}
         for metric_name in utils.METRICS
     }
@@ -164,35 +169,42 @@ def train_models(train_datasets: List[str], num_epochs: int) -> Dict[str, str]:
 
                 # filter large graphs for slow methods
                 methods_functions_graphs: List[Tuple[str, Callable[[Graph], Dict[Cluster, float]], Graph]] = list()
-                for method, function in inner_methods:
+                for method_name, method_function in inner_methods:
                     for graph in graphs:
-                        if graph.cardinality > 128 and method in chaoda.slow_methods:
+                        if graph.cardinality > 128 and method_name in chaoda.slow_methods:
                             continue
-                        methods_functions_graphs.append((method, function, graph))
+                        methods_functions_graphs.append((method_name, method_function, graph))
 
                 # build the data
-                for method, function, graph in methods_functions_graphs:
+                for method_name, method_function, graph in methods_functions_graphs:
                     print('-' * 120)
-                    print(f'\t\tDataset: {dataset}, Epoch: {epoch + 1} of {num_epochs}, Metric: {metric_name}, Method: {method}')
+                    print(f'\t\tDataset: {dataset}, Epoch: {epoch + 1} of {num_epochs}, Metric: {metric_name}, Method: {method_name}')
                     print('-' * 120)
-                    x, y = _build_data(function, graph, manifold, labels)
-                    train_x_dict[metric_name][method].append(x), train_y_dict[metric_name][method].append(y)
+                    train_x, train_y = _build_data(method_function, graph, manifold, labels)
+                    train_x_dict[metric_name][method_name] = numpy.concatenate(
+                        arrays=[train_x_dict[metric_name][method_name], train_x],
+                        axis=0
+                    )
+                    train_y_dict[metric_name][method_name] = numpy.concatenate(
+                        arrays=[train_y_dict[metric_name][method_name], train_y],
+                        axis=0
+                    )
 
                 # train the meta-models
-                for method, _, _ in methods_functions_graphs:
-                    train_x = numpy.concatenate(train_x_dict[metric_name][method], axis=0)
-                    train_y = numpy.concatenate(train_y_dict[metric_name][method], axis=0)
+                for method_name, _, _ in methods_functions_graphs:
+                    train_x = train_x_dict[metric_name][method_name]
+                    train_y = train_y_dict[metric_name][method_name]
 
-                    lr_model, dt_model = meta_models[metric_name][method]
+                    lr_model, dt_model = meta_models[metric_name][method_name]
                     lr_model.fit(train_x, train_y)
                     dt_model.fit(train_x, train_y)
 
     model_codes: Dict[str, str] = dict()
     for metric_name in utils.METRICS:
-        for method in CHAODA.method_names:
-            lr_model, dt_model = meta_models[metric_name][method]
-            model_codes[f'lr_{metric_name}_{method}'] = extract_lr(lr_model, metric_name, method)
-            model_codes[f'dt_{metric_name}_{method}'] = extract_dt(dt_model, metric_name, method)
+        for method_name in CHAODA.method_names:
+            lr_model, dt_model = meta_models[metric_name][method_name]
+            model_codes[f'lr_{metric_name}_{method_name}'] = extract_lr(lr_model, metric_name, method_name)
+            model_codes[f'dt_{metric_name}_{method_name}'] = extract_dt(dt_model, metric_name, method_name)
 
     return model_codes
 
