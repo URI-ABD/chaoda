@@ -35,12 +35,11 @@ _NORMALIZATIONS = [
 
 def _score_dataset(dataset: str, renormalize: bool, fast: bool) -> Tuple[float, float]:
     """ Runs CHAODA on the dataset and returns the tuple of (auc-score, time-taken). """
-    data, labels = datasets.read(dataset, None, None)
-    name = 'CHAODA-Fast' if fast else 'CHAODA'
+    data, labels = datasets.read(dataset, None, SUB_SAMPLE)
+    name: str = 'CHAODA-fast' if fast else 'CHAODA'
     print_blurb(name, dataset, data.shape)
-    speed_threshold = max(128, int(np.sqrt(data.shape[0]))) if fast else None
-    if fast:
-        print(f"Speed threshold set to {speed_threshold}.")
+    speed_threshold = max(128, int(np.sqrt(len(labels)))) if fast else None
+    print(f'speed threshold set to {speed_threshold}')
 
     start = time()
     detector: CHAODA = CHAODA(
