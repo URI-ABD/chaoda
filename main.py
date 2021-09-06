@@ -10,7 +10,7 @@ import sdss
 import utils
 
 MODES = [
-    'download-odds-datasets',
+    'download-datasets',
     'train-meta-ml',
     'bench-chaoda',
     'bench-pyod',
@@ -77,8 +77,8 @@ if __name__ == '__main__':
 
     utils.paths.create_required_folders()
 
-    if _mode == 'download-odds-datasets':
-        utils.datasets.download_odds_datasets()
+    if _mode == 'download-datasets':
+        utils.datasets.download_datasets()
 
     elif _mode == 'train-meta-ml':
         numpy.random.seed(42), random.seed(42)

@@ -276,6 +276,8 @@ TSWLatexianTemp*
 *.lpz
 
 # local files and folders
+venv
+.venv
 .chaoda
 .idea
 .vscode

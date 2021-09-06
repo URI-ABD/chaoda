@@ -104,7 +104,7 @@ def get(dataset: str):
     return
 
 
-def download_odds_datasets():
+def download_datasets():
     list(map(get, DATASET_NAMES))
     return
 

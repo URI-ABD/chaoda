@@ -2,7 +2,7 @@ from typing import List
 
 import pandas
 
-from . import datasets as chaoda_datasets
+from . import datasets
 from . import paths
 
 TRAIN_DATASETS: List[str] = list(sorted([
@@ -14,7 +14,7 @@ TRAIN_DATASETS: List[str] = list(sorted([
     'thyroid',
 ]))
 TEST_DATASETS: List[str] = list(sorted([
-    _d for _d in chaoda_datasets.DATASET_LINKS.keys()
+    _d for _d in datasets.DATASET_LINKS.keys()
     if _d not in TRAIN_DATASETS
 ]))
 
@@ -59,7 +59,7 @@ def bold_column(column: List[str]) -> List[str]:
 
 
 # noinspection DuplicatedCode
-def parse_csv(mode: str, datasets: List[str]):
+def parse_csv(mode: str, dataset_names: List[str]):
     if mode not in ['scores', 'times']:
         raise ValueError(f'mode must be \'scores\' or \'times\'. Got {mode} instead.')
 
@@ -79,15 +79,15 @@ def parse_csv(mode: str, datasets: List[str]):
         models[1] = 'CHAODA-Fast'
 
     new_df['model'] = models
-    for dataset in datasets:
-        short = chaoda_datasets.SHORT_NAMES[dataset]
-        new_df[short] = bold_best(raw_df[dataset].tolist(), high=high)
+    for dataset_name in dataset_names:
+        short = datasets.SHORT_NAMES[dataset_name]
+        new_df[short] = bold_best(raw_df[dataset_name].tolist(), high=high)
 
     return new_df, bold_column(list(new_df.columns))
 
 
-def get_latex(mode: str, datasets: List[str]):
-    df, columns = parse_csv(mode, datasets)
+def get_latex(mode: str, dataset_names: List[str]):
+    df, columns = parse_csv(mode, dataset_names)
 
     latex_string: str = df.to_latex(
         header=columns,
@@ -109,14 +109,14 @@ def get_latex(mode: str, datasets: List[str]):
 def write_tables():
     out_path = str(paths.RESULTS_DIR.joinpath('latex'))
 
-    def _write_tables(name: str, datasets: List[str]):
+    def _write_tables(name: str, dataset_names: List[str]):
         path = f'{out_path}_scores_{name}.txt'
         with open(path, 'w') as fp:
-            fp.write(get_latex('scores', datasets))
+            fp.write(get_latex('scores', dataset_names))
 
         path = f'{out_path}_times_{name}.txt'
         with open(path, 'w') as fp:
-            fp.write(get_latex('times', datasets))
+            fp.write(get_latex('times', dataset_names))
 
         return
 

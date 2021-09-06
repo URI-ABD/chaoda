@@ -1,51 +1,110 @@
 # CLAM: CHAODA
 
-This readme contains the information and specific commands you would need to set up a python virtual environment and reproduce our results for CHAODA and the comparisons against pyOD and other algorithms.
+This readme contains the information and specific commands you would need to set up a python virtual environment and reproduce our results for CHAODA and the comparisons against other algorithms.
 
-## Setting up Python and a virtual environment
+## Setting up Python and a Virtual Environment:
 
-We developed, tested and benchmarked our implementation with Ubuntu 20.04 and Python 3.6.
+We developed, tested and benchmarked our implementation with:
+
+* OS: Manjaro Linux x86_64
+* Kernel: 5.13.13-1-MANJARO
+* Python: 3.9.6
+
 If you have a Mac, you made a terrible life decision some time ago and will have to adapt some commands for yourself.
 
 First, make sure to install the required packages to create and manage Python virtual-environments.
+
+**Arch:**
+```zsh
+$ sudo pacman -S python-pip
+```
+
+**Ubuntu:**
 ```bash
 $ sudo apt install python3-dev python3-pip python3-venv
 ```
 
-Next, create a new virtual environment in this folder.
+Next, create a new virtual environment.
+
+**Arch:**
+```zsh
+$ python -m venv venv
+```
+
+**Ubuntu:**
 ```bash
-$ cd /path/to/this/folder
 $ python3 -m venv venv
 ```
 
-Update ```pip``` and install the required Python packages.
+Update `pip` and install the required Python packages.
 ```bash
 $ source venv/bin/activate
 $ pip install --upgrade pip setuptools wheel
-$ pip install sklearn scipy pyod tensorflow keras pandas
 ```
 
-We include a ```requirements.txt``` file with the exact version number we used for the reported benchmarks.
-If you wish, you can ignore the last command and install the identical versions of these packages with:
+Now `pip install` the following packages for:
+
+* CHAODA benchmarks:
+  * `pyclam`
+  * `numpy`
+  * `scipy`
+  * `scikit-learn`
+  * `h5py`
+  * `pandas`
+* competing algorithms:
+  * `pyod`
+  * `tensorflow`
+  * `keras`
+* (my) sanity:
+  * `tqdm`
+* SDSS-APOGEE2 benchmarks:
+  * `astropy`
+* generating some neat plots:
+  * `matplotlib`
+  * `umap-learn`
+
+We include a `requirements.txt` file with the exact version numbers we used for each package.
+If you're using Linux and have an old enough kernel, these versions will not be available.
+In this case, you're on your own.
+If you have a Mac or a Windows computer, re-read the previous sentence. 
+
+## Running CHAODA:
+
+We provide an easy and helpful CLI through `main.py`.
+For help, run:
 ```bash
-$ pip install -r requirements.txt
+$ python main.py --help
 ```
 
-Verify that all tests for ```pyclam``` finish successfully.
+We assume write access for the local folder of this repository.
+
+### Downloading ODDS datasets:
+
+You will need these datasets to reproduce the benchmarks for CHAODA and competitors.
+
 ```bash
-$ python -m unittest discover
+$ pyhton main.py --mode download-datasets
 ```
 
-This verification should take roughly one minute, and all tests should pass.
+### Training the Meta-ML Models:
 
-You now have a proper virtual environment to run our code.
+We provide the meta-ml models we trained and used for the reported benchmarks.
+These are in `chaoda/meta_models.py`.
+If you're curious as to how these are generated (and how they strictly adhere to PEP8), feel free to dig around in `chaoda/train_meta_ml.py`.
 
-## Running benchmarks
-
-First, download all datasets used for benchmarks.
+If you want to retrain the meta-ml models for yourself, run:
 ```bash
-$ python datasets.py
+$ pyhton main.py --mode train-meta-ml --meta-ml-epochs 10
 ```
+`5` epochs are likely enough.
+We went with `10` by default.
+
+Running this command will produce a new file `chaoda/custom_meta_models.py` which will override the meta-ml models we provide.
+If you wish to revert to the models we provide, just delete this file.
+
+### Benchmarking CHAODA:
+
+
 
 You should see a new folder called ```data``` in this directory.
 This folder contains all downloaded datasets in ```.mat``` format.
