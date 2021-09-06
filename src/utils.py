@@ -3,8 +3,6 @@ from typing import Tuple
 
 import pandas as pd
 
-import datasets
-
 ROOT_DIR = Path(__file__).parent.parent.resolve()
 DATA_DIR = ROOT_DIR.joinpath('data')
 RESULTS_DIR = ROOT_DIR.joinpath('results')
@@ -21,6 +19,8 @@ MAX_DEPTH = 50  # even though no dataset reaches this far
 
 
 def get_dataframes():
+    import datasets
+
     if not SCORES_PATH.exists():
         scores_df = pd.DataFrame(columns=datasets.DATASET_NAMES)
         scores_df.index.name = 'model'

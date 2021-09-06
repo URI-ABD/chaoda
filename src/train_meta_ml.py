@@ -36,8 +36,7 @@ SAMPLING_DATASETS = [
 NOT_NORMALIZED = {
     'shuttle',
 }
-FEATURE_NAMES = ['cardinality', 'radius', 'lfd']
-FEATURE_NAMES.extend(f'{_name}_ema' for _name in FEATURE_NAMES)
+FEATURE_NAMES = ['cardinality', 'radius', 'lfd', 'cardinality_ema', 'radius_ema', 'lfd_ema']
 
 
 def extract_dt(tree: DecisionTreeRegressor, metric: str, method: str) -> str:
@@ -80,7 +79,7 @@ def extract_dt(tree: DecisionTreeRegressor, metric: str, method: str) -> str:
 def extract_lr(model: LinearRegression, metric: str, method: str):
     coefficients = [f'{float(c):.6e}' for c in model.coef_]
     return '\n'.join([
-        f'def from_lr_{metric}_{method}(ratios: numpy.ndarray) -> float:',
+        f'def lr_{metric}_{method}(ratios: numpy.ndarray) -> float:',
         f'    return float(numpy.dot(numpy.asarray(',
         f'        a=[{", ".join(coefficients)}],',
         f'        dtype=float,',
@@ -121,11 +120,11 @@ def train_models(train_datasets: List[str], num_epochs: int) -> Dict[str, str]:
         for metric_name in utils.METRICS
     }
     train_x_dict: Dict[str, Dict[str, numpy.ndarray]] = {
-        metric_name: {method_name: list() for method_name in CHAODA.method_names}
+        metric_name: {method_name: None for method_name in CHAODA.method_names}
         for metric_name in utils.METRICS
     }
     train_y_dict: Dict[str, Dict[str, numpy.ndarray]] = {
-        metric_name: {method_name: list() for method_name in CHAODA.method_names}
+        metric_name: {method_name: None for method_name in CHAODA.method_names}
         for metric_name in utils.METRICS
     }
 
@@ -181,14 +180,12 @@ def train_models(train_datasets: List[str], num_epochs: int) -> Dict[str, str]:
                     print(f'\t\tDataset: {dataset}, Epoch: {epoch + 1} of {num_epochs}, Metric: {metric_name}, Method: {method_name}')
                     print('-' * 120)
                     train_x, train_y = _build_data(method_function, graph, manifold, labels)
-                    train_x_dict[metric_name][method_name] = numpy.concatenate(
-                        arrays=[train_x_dict[metric_name][method_name], train_x],
-                        axis=0
-                    )
-                    train_y_dict[metric_name][method_name] = numpy.concatenate(
-                        arrays=[train_y_dict[metric_name][method_name], train_y],
-                        axis=0
-                    )
+                    if train_x_dict[metric_name][method_name] is None:
+                        train_x_dict[metric_name][method_name] = train_x
+                        train_y_dict[metric_name][method_name] = train_y
+                    else:
+                        train_x_dict[metric_name][method_name] = numpy.concatenate((train_x_dict[metric_name][method_name], train_x), axis=0)
+                        train_y_dict[metric_name][method_name] = numpy.concatenate((train_y_dict[metric_name][method_name], train_y), axis=0)
 
                 # train the meta-models
                 for method_name, _, _ in methods_functions_graphs:
@@ -218,16 +215,16 @@ def write_meta_models(model_codes: Dict[str, str], out_path: str):
 
         fp.write('\nMETA_MODELS = {\n')
         for name in model_codes.keys():
-            fp.write(f'    \'from_{name}\': from_{name},\n')
+            fp.write(f'    \'{name}\': {name},\n')
         fp.write('}\n')
     return
 
 
 if __name__ == '__main__':
     numpy.random.seed(42), random.seed(42)
-    # _train_datasets = ['vertebral', 'wine']  # for testing
-    _train_datasets = list(sorted(numpy.random.choice(SAMPLING_DATASETS, 6, replace=False)))
-    print(_train_datasets)
+    _train_datasets = ['vertebral', 'wine']  # for testing
+    # _train_datasets = list(sorted(numpy.random.choice(SAMPLING_DATASETS, 6, replace=False)))
+    # print(_train_datasets)
     # exit(1)
     write_meta_models(
         train_models(_train_datasets, num_epochs=10),

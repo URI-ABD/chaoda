@@ -1,4 +1,5 @@
 import random
+import signal
 import time
 import warnings
 from typing import List
@@ -29,15 +30,14 @@ import utils
 
 
 # TODO: Break out deep-learning based methods in a separate comparisons table.
-# TODO: Add the following deep-learning based methods to comparisons
+# TODO: Try to add the following deep-learning based methods to comparisons
 #  REPEN: Code bugs out because authors did not provide information on recreating their environment and version numbers for keras/tensorflow
 #  DAGMM: Deep Autoencoder with Gaussian Mixture Model. Can't find source code from authors. Also, model is weakly supervised.
 #  RDP: Random Distance Predicting. https://github.com/billhhh/RDP/
 #  AE-1SVM: https://github.com/minh-nghia/AE-1SVM  This would be a lot of work to get running because
 #                                                  the authors have a separate jupyter notebook for each dataset.
-#  DEC: Deep Embedded Clustering. https://github.com/piiswrong/dec  Implementation uses a custom build of Caffe from berkeley
+#  DEC: Deep Embedded Clustering. https://github.com/piiswrong/dec  Implementation uses a custom build of Caffe from berkeley...
 #  APE: can't find source code
-#  AEHE: Source code is in Korean
 
 
 def _neurons(dataset: numpy.ndarray):
@@ -65,7 +65,7 @@ def _neurons(dataset: numpy.ndarray):
     ]
 
 
-MODELS = {
+PYOD_MODELS = {
     'ABOD': lambda _, c: abod.ABOD(contamination=c),
     'AutoEncoder': lambda d, c: auto_encoder.AutoEncoder(contamination=c, hidden_neurons=_neurons(d)),
     'CBLOF': lambda _, c: cblof.CBLOF(contamination=c),
@@ -97,7 +97,13 @@ def timeout_handler(signum, frame):
 
 
 def run_model(model_name: str, datasets: List[str], max_time: int = 36_000):
-    import signal
+    """ Runs a PyOD model on all datasets.
+
+    Args:
+        model_name: name of pyod-model
+        datasets: list of dataset names fom ODDS.
+        max_time: max number of seconds to allow the model.
+    """
     signal.signal(signal.SIGALRM, timeout_handler)
 
     for dataset in datasets:
@@ -113,18 +119,18 @@ def run_model(model_name: str, datasets: List[str], max_time: int = 36_000):
         signal.alarm(max_time)
         # noinspection PyBroadException
         try:
-            model = MODELS[model_name](data, contamination)
+            pyod_model = PYOD_MODELS[model_name](data, contamination)
 
             start = time.time()
 
-            model.fit(data)
-            rankings = model.predict(data)
+            pyod_model.fit(data)
+            rankings = pyod_model.predict(data)
 
             time_taken = float(time.time() - start)
 
             score = roc_auc_score(labels, rankings)
 
-        except TimeoutException:
+        except TimeoutException as _:
             score, time_taken = 'TO', 'TO'
 
         except Exception as _:
@@ -145,6 +151,8 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     numpy.random.seed(42), random.seed(42)
     utils.RESULTS_DIR.mkdir(exist_ok=True)
+    _datasets = chaoda_datasets.DATASET_NAMES
+    # _datasets = ['lympho']  # for testing
 
-    for _name in MODELS:
-        run_model(_name, chaoda_datasets.DATASET_NAMES, 600)
+    for _name in PYOD_MODELS:
+        run_model(_name, _datasets, 600)
