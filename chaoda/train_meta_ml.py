@@ -13,8 +13,10 @@ from pyclam.criterion import MetaMLSelect
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 
-import utils
-from datasets import read
+from utils import constants
+from utils import datasets
+from utils import helpers
+from utils import paths
 
 SAMPLING_DATASETS = [
     'annthyroid',
@@ -117,15 +119,15 @@ def train_models(train_datasets: List[str], num_epochs: int) -> Dict[str, str]:
             method_name: (LinearRegression(), DecisionTreeRegressor(max_depth=3))
             for method_name in CHAODA.method_names
         }
-        for metric_name in utils.METRICS
+        for metric_name in constants.METRICS
     }
     train_x_dict: Dict[str, Dict[str, numpy.ndarray]] = {
         metric_name: {method_name: None for method_name in CHAODA.method_names}
-        for metric_name in utils.METRICS
+        for metric_name in constants.METRICS
     }
     train_y_dict: Dict[str, Dict[str, numpy.ndarray]] = {
         metric_name: {method_name: None for method_name in CHAODA.method_names}
-        for metric_name in utils.METRICS
+        for metric_name in constants.METRICS
     }
 
     for dataset in train_datasets:
@@ -134,12 +136,12 @@ def train_models(train_datasets: List[str], num_epochs: int) -> Dict[str, str]:
         print('-' * 200)
 
         normalization_mode = 'gaussian' if dataset in NOT_NORMALIZED else None
-        data, labels = read(dataset, normalization_mode)
+        data, labels = datasets.read(dataset, normalization_mode)
 
         chaoda = CHAODA(
-            metrics=utils.METRICS,
-            max_depth=utils.MAX_DEPTH,
-            min_points=utils.assign_min_points(data.shape[0]),
+            metrics=constants.METRICS,
+            max_depth=constants.MAX_DEPTH,
+            min_points=helpers.assign_min_points(data.shape[0]),
         )
         manifolds = chaoda.build_manifolds(data)
         # noinspection PyProtectedMember
@@ -197,7 +199,7 @@ def train_models(train_datasets: List[str], num_epochs: int) -> Dict[str, str]:
                     dt_model.fit(train_x, train_y)
 
     model_codes: Dict[str, str] = dict()
-    for metric_name in utils.METRICS:
+    for metric_name in constants.METRICS:
         for method_name in CHAODA.method_names:
             lr_model, dt_model = meta_models[metric_name][method_name]
             model_codes[f'lr_{metric_name}_{method_name}'] = extract_lr(lr_model, metric_name, method_name)
@@ -228,5 +230,5 @@ if __name__ == '__main__':
     # exit(1)
     write_meta_models(
         train_models(_train_datasets, num_epochs=10),
-        utils.ROOT_DIR.joinpath('src').joinpath('custom_meta_models.py')
+        paths.ROOT_DIR.joinpath('src').joinpath('custom_meta_models.py')
     )

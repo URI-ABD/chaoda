@@ -10,12 +10,15 @@ import numpy
 from pyclam import CHAODA
 from sklearn.metrics import roc_auc_score
 
-import datasets
-# You can replace this next import with your own generated file to verify results.
-#  Remember to change the parsing for META_MODELS just below.
-# import custom_meta_models as meta_models
-import meta_models
-import utils
+from utils import constants
+from utils import datasets
+from utils import helpers
+from utils import paths
+
+try:
+    import custom_meta_models as meta_models
+except ImportError:
+    import meta_models
 
 _NORMALIZATIONS = [
     None,
@@ -40,15 +43,15 @@ def _bench_dataset(dataset: str, fast: bool, individuals_csv_path: Optional[Path
     """
     data, labels = datasets.read(dataset, None, None)
     chaoda_name = 'CHAODA-Fast' if fast else 'CHAODA'
-    utils.print_blurb(chaoda_name, dataset, data.shape)
+    helpers.print_blurb(chaoda_name, dataset, data.shape)
     speed_threshold = max(128, int(numpy.sqrt(len(labels)))) if fast else None
     print(f'speed threshold set to {speed_threshold}')
 
     start = time()
     detector: CHAODA = CHAODA(
-        metrics=utils.METRICS,
-        max_depth=utils.MAX_DEPTH,
-        min_points=utils.assign_min_points(data.shape[0]),
+        metrics=constants.METRICS,
+        max_depth=constants.MAX_DEPTH,
+        min_points=helpers.assign_min_points(data.shape[0]),
         meta_ml_functions=META_MODELS,
         speed_threshold=speed_threshold,
     ).fit(data=data)
@@ -102,7 +105,7 @@ def _bench_dataset(dataset: str, fast: bool, individuals_csv_path: Optional[Path
 def _bench_chaoda(dataset_names: List[str], fast: bool, report_individual: Optional[Path] = None):
     """ Calculates anomaly scores for all datasets using the CHAODA class.
     """
-    scores_df, times_df = utils.get_dataframes()
+    scores_df, times_df = helpers.get_dataframes()
     model_name = 'CHAODA_FAST' if fast else 'CHAODA'
 
     for i, dataset in enumerate(dataset_names):
@@ -111,17 +114,17 @@ def _bench_chaoda(dataset_names: List[str], fast: bool, report_individual: Optio
         scores_df.at[model_name, dataset] = roc_score
         times_df.at[model_name, dataset] = time_taken
 
-        scores_df.to_csv(utils.SCORES_PATH, float_format='%.2f')
-        times_df.to_csv(utils.TIMES_PATH, float_format='%.2e')
+        scores_df.to_csv(paths.SCORES_PATH, float_format='%.2f')
+        times_df.to_csv(paths.TIMES_PATH, float_format='%.2e')
 
     return
 
 
 if __name__ == '__main__':
     numpy.random.seed(42), random.seed(42)
-    utils.RESULTS_DIR.mkdir(exist_ok=True)
-    utils.DATA_DIR.mkdir(exist_ok=True)
-    _individual_scores_path = utils.RESULTS_DIR.joinpath('individual_scores.csv')
+    paths.RESULTS_DIR.mkdir(exist_ok=True)
+    paths.DATA_DIR.mkdir(exist_ok=True)
+    _individual_scores_path = paths.RESULTS_DIR.joinpath('individual_scores.csv')
     _dataset_names = datasets.DATASET_NAMES
     # _dataset_names = ['wine']
 
