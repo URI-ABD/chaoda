@@ -6,11 +6,11 @@ import umap
 from matplotlib import pyplot
 from sklearn import metrics
 
-import utils
+import paths
 
 
 def _directory(plot: str, metric: str, method: str) -> Path:
-    dir_path = utils.PLOTS_DIR.joinpath(plot).joinpath(method).joinpath(metric)
+    dir_path = paths.PLOTS_DIR.joinpath(plot).joinpath(method).joinpath(metric)
     dir_path.mkdir(exist_ok=True)
     return dir_path
 
@@ -136,7 +136,7 @@ def embed_umap(
     :param dataset: name of the dataset being reduced.
     :param metric: metric to use for the reduction.
     """
-    umap_path = utils.UMAPS_DIR.joinpath(f'{dataset}_{metric}.npy')
+    umap_path = paths.UMAPS_DIR.joinpath(f'{dataset}_{metric}.npy')
     if not umap_path.exists():
         embedding: numpy.ndarray = umap.UMAP(
             n_components=n_components,
@@ -144,7 +144,7 @@ def embed_umap(
             metric=metric,
         ).fit_transform(data)
 
-        utils.UMAPS_DIR.mkdir(exist_ok=True)
+        paths.UMAPS_DIR.mkdir(exist_ok=True)
         numpy.save(
             file=umap_path,
             arr=embedding,

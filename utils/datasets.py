@@ -10,7 +10,7 @@ from pyclam.utils import normalize
 from scipy.io import loadmat
 from scipy.io.matlab.miobase import MatReadError
 
-from utils import DATA_DIR
+from paths import DATA_DIR
 
 __all__ = [
     'DATASET_LINKS',

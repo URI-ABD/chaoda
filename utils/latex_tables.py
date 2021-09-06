@@ -3,7 +3,7 @@ from typing import List
 import pandas as pd
 
 import datasets as chaoda_datasets
-import utils
+import paths
 
 TRAIN_DATASETS: List[str] = list(sorted([
     'annthyroid',
@@ -64,7 +64,7 @@ def parse_csv(mode: str, datasets: List[str]):
         raise ValueError(f'mode must be \'scores\' or \'times\'. Got {mode} instead.')
 
     high = mode == 'scores'
-    path = utils.SCORES_PATH if high else utils.TIMES_PATH
+    path = paths.SCORES_PATH if high else paths.TIMES_PATH
     raw_df: pd.DataFrame = pd.read_csv(path, dtype=str)
 
     new_df: pd.DataFrame = pd.DataFrame()
@@ -105,7 +105,7 @@ def get_latex(mode: str, datasets: List[str]):
 
 
 def write_tables():
-    out_path = str(utils.RESULTS_DIR.joinpath('latex'))
+    out_path = str(paths.RESULTS_DIR.joinpath('latex'))
 
     def _write_tables(name: str, datasets: List[str]):
         path = f'{out_path}_scores_{name}.txt'
