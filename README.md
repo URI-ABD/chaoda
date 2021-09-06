@@ -4,13 +4,21 @@ This readme contains the information and specific commands you would need to set
 
 ## Setting up Python and a Virtual Environment:
 
-We developed, tested and benchmarked our implementation with:
+We developed and tested our implementation on a machine with:
 
-* OS: Manjaro Linux x86_64
-* Kernel: 5.13.13-1-MANJARO
-* Python: 3.9.6
+* **OS**: Manjaro Linux x86_64
+* **Kernel**: 5.13.13-1-MANJARO
+* **Python**: 3.9.6
 
 If you have a Mac, you made a terrible life decision some time ago and will have to adapt some commands for yourself.
+
+For the paper, we benchmarked using a machine with:
+
+* **CPU**: Intel Xeon E5-2690 v4 (28 cores) @ 3.500G
+* **Memory**: 512GiB
+* **OS**: CentOS Linux 7 (Core) x86_64
+* **Kernel**: 3.10.0-1127.13.1.el7.x86_64
+* **Python**: 3.6.8
 
 First, make sure to install the required packages to create and manage Python virtual-environments.
 
@@ -83,7 +91,7 @@ We assume write access for the local folder of this repository.
 You will need these datasets to reproduce the benchmarks for CHAODA and competitors.
 
 ```bash
-$ pyhton main.py --mode download-datasets
+$ python main.py --mode download-datasets
 ```
 
 ### Training the Meta-ML Models:
@@ -94,7 +102,7 @@ If you're curious as to how these are generated (and how they strictly adhere to
 
 If you want to retrain the meta-ml models for yourself, run:
 ```bash
-$ pyhton main.py --mode train-meta-ml --meta-ml-epochs 10
+$ python main.py --mode train-meta-ml --meta-ml-epochs 10
 ```
 `5` epochs are likely enough.
 We went with `10` by default.
