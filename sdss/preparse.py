@@ -7,14 +7,17 @@ import numpy
 from tqdm import tqdm
 from astropy.io import fits
 
-from utils import paths
 
 # APO_CHUNK = '1m'
 APO_CHUNK = '25m'
 
+ROOT_DIR = Path(__file__).parent.parent.resolve()
+DATA_DIR = ROOT_DIR.joinpath('data')
+
 APOGEE_PATH = Path(f'/data/abd/sdss/stars/apo{APO_CHUNK}').resolve()
-APOGEE_OUT_PATH = paths.DATA_DIR.joinpath(f'apo{APO_CHUNK}.npy')
-APOGEE_METADATA_PATH = paths.DATA_DIR.joinpath(f'apo{APO_CHUNK}_filenames.csv')
+APOGEE_OUT_PATH = DATA_DIR.joinpath(f'apo{APO_CHUNK}.npy')
+APOGEE_METADATA_PATH = DATA_DIR.joinpath(f'apo{APO_CHUNK}_filenames.csv')
+
 NUM_DIMS = 8_575
 
 
@@ -91,7 +94,7 @@ def extract_combined_spectra(fields_map: Dict[str, List[str]], *, test_chunk: Op
 
     print(f'saving {apogee_spectra.shape[0]} apo{APO_CHUNK} spectra...')
     numpy.save(
-        file=APOGEE_OUT_PATH,
+        file=str(APOGEE_OUT_PATH),
         arr=apogee_spectra,
         allow_pickle=False,
         fix_imports=False,
@@ -100,7 +103,7 @@ def extract_combined_spectra(fields_map: Dict[str, List[str]], *, test_chunk: Op
 
 
 if __name__ == '__main__':
-    paths.DATA_DIR.mkdir(exist_ok=True)
+    DATA_DIR.mkdir(exist_ok=True)
 
     get_fits_file_paths()
     # extract_combined_spectra(get_fits_file_paths())
