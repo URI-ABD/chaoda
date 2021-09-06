@@ -151,8 +151,10 @@ def embed_umap(
             allow_pickle=True,
             fix_imports=True,
         )
+    else:
+        embedding = numpy.load(
+            file=umap_path,
+            mmap_mode='r',
+        )
 
-    return numpy.load(
-        file=umap_path,
-        mmap_mode='r',
-    )
+    return embedding
