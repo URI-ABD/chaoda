@@ -275,27 +275,14 @@ TSWLatexianTemp*
 # Makeindex log files
 *.lpz
 
-.anomaly
+# local files and folders
+.chaoda
 .idea
 .vscode
 data
-*.zip
-*/__pycache__
-__pycache__
-logs
-.venv
-plots
-build
-umaps
-embeddings
-normalized
-.chaoda
-out
-*.csv
-train
 results
-papers
-uci-data
-old_src
-clam
-src/explorations.py
+plots
+umaps
+notebooks
+*/__pycache__/*
+.ipynb_checkpoints
