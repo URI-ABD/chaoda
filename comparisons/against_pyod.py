@@ -1,7 +1,5 @@
-import random
 import signal
 import time
-import warnings
 from typing import List
 
 import numpy
@@ -30,6 +28,8 @@ from utils import datasets
 from utils import helpers
 from utils import paths
 
+__all__ = ['bench_pyod']
+
 
 # TODO: Break out deep-learning based methods in a separate comparisons table.
 # TODO: Try to add the following deep-learning based methods to comparisons
@@ -45,8 +45,12 @@ from utils import paths
 def _neurons(dataset: numpy.ndarray):
     """ This sets up default shapes for neural-network based methods
     that would crash without this as input.
+
     We allow for deeper networks for larger datasets.
     However, we have not investigated any other model architectures for these methods.
+
+    The authors of these models did not provide a default architecture and we would
+    rather not spend time on a hyper-parameter search.
     """
     return [
         dataset.shape[1],
@@ -98,7 +102,7 @@ def timeout_handler(signum, frame):
     raise TimeoutException
 
 
-def run_model(model_name: str, dataset_names: List[str], max_time: int = 36_000):
+def run_model(model_name: str, dataset_names: List[str], max_time: int):
     """ Runs a PyOD model on all datasets.
 
     Args:
@@ -149,12 +153,6 @@ def run_model(model_name: str, dataset_names: List[str], max_time: int = 36_000)
     return
 
 
-if __name__ == "__main__":
-    warnings.filterwarnings('ignore')
-    numpy.random.seed(42), random.seed(42)
-    paths.RESULTS_DIR.mkdir(exist_ok=True)
-    _dataset_names = datasets.DATASET_NAMES
-    # _datasets = ['lympho']  # for testing
-
-    for _name in PYOD_MODELS:
-        run_model(_name, _dataset_names, 600)
+def bench_pyod(dataset_names, max_time: int):
+    for pyod_name in PYOD_MODELS:
+        run_model(pyod_name, dataset_names, max_time)

@@ -1,4 +1,3 @@
-import random
 from pathlib import Path
 from time import time
 from typing import Callable
@@ -16,16 +15,11 @@ from utils import helpers
 from utils import paths
 
 try:
-    import custom_meta_models as meta_models
+    from . import custom_meta_models as meta_models
 except ImportError:
-    import meta_models
+    from . import meta_models
 
-_NORMALIZATIONS = [
-    None,
-    'linear',
-    'gaussian',
-    'sigmoid',
-]
+__all__ = ['META_MODELS', 'bench_chaoda']
 
 META_MODELS: List[Tuple[str, str, Callable[[numpy.array], float]]] = [
     # tuple of (metric, method, function)
@@ -34,7 +28,7 @@ META_MODELS: List[Tuple[str, str, Callable[[numpy.array], float]]] = [
 ]
 
 
-def _bench_dataset(dataset: str, fast: bool, individuals_csv_path: Optional[Path]) -> Tuple[float, float]:
+def bench_dataset(dataset: str, fast: bool, individuals_csv_path: Optional[Path]) -> Tuple[float, float]:
     """ Runs CHAODA on the dataset and returns the tuple of (auc-score, time-taken).
 
     :param dataset: Name of the dataset to benchmark
@@ -102,35 +96,18 @@ def _bench_dataset(dataset: str, fast: bool, individuals_csv_path: Optional[Path
     return float(roc_auc_score(labels, detector.scores)), float(time() - start)
 
 
-def _bench_chaoda(dataset_names: List[str], fast: bool, report_individual: Optional[Path] = None):
+def bench_chaoda(dataset_names: List[str], fast: bool, individuals_csv_path: Optional[Path] = None):
     """ Calculates anomaly scores for all datasets using the CHAODA class.
     """
     scores_df, times_df = helpers.get_dataframes()
     model_name = 'CHAODA_FAST' if fast else 'CHAODA'
 
     for i, dataset in enumerate(dataset_names):
-        roc_score, time_taken = _bench_dataset(dataset, fast, report_individual)
+        roc_score, time_taken = bench_dataset(dataset, fast, individuals_csv_path)
 
         scores_df.at[model_name, dataset] = roc_score
         times_df.at[model_name, dataset] = time_taken
 
         scores_df.to_csv(paths.SCORES_PATH, float_format='%.2f')
         times_df.to_csv(paths.TIMES_PATH, float_format='%.2e')
-
     return
-
-
-if __name__ == '__main__':
-    numpy.random.seed(42), random.seed(42)
-    paths.RESULTS_DIR.mkdir(exist_ok=True)
-    paths.DATA_DIR.mkdir(exist_ok=True)
-    _individual_scores_path = paths.RESULTS_DIR.joinpath('individual_scores.csv')
-    _dataset_names = datasets.DATASET_NAMES
-    # _dataset_names = ['wine']
-
-    for _fast in (True, False):
-        _bench_chaoda(
-            dataset_names=_dataset_names,
-            fast=_fast,
-            report_individual=_individual_scores_path,
-        )

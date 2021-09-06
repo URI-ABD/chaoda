@@ -10,7 +10,7 @@ from pyclam.utils import normalize
 from scipy.io import loadmat
 from scipy.io.matlab.miobase import MatReadError
 
-from .paths import DATA_DIR
+from . import paths
 
 __all__ = [
     'DATASET_LINKS',
@@ -79,20 +79,17 @@ DATASET_NAMES = list(DATASET_LINKS.keys())
 def get(dataset: str):
     """ Download the dataset if needed, and returns the filename used to store it. """
     link = DATASET_LINKS[dataset]
-    data_path = DATA_DIR.joinpath(f'{dataset}.npy')
-    labels_path = DATA_DIR.joinpath(f'{dataset}_labels.npy')
+    data_path = paths.DATA_DIR.joinpath(f'{dataset}.npy')
+    labels_path = paths.DATA_DIR.joinpath(f'{dataset}_labels.npy')
 
-    if not DATA_DIR.exists():
-        DATA_DIR.mkdir()
-
-    filename = DATA_DIR.joinpath(f'{dataset}.mat')
+    filename = paths.DATA_DIR.joinpath(f'{dataset}.mat')
     if not filename.exists():
         subprocess.run(['wget', link, '-O', filename])
 
     if not filename.exists():
         raise ValueError(f'Could not get dataset {dataset}.')
 
-    data_dict: Dict = dict()
+    data_dict = dict()
     try:
         data_dict = loadmat(filename)
     except (NotImplementedError, MatReadError):
@@ -107,6 +104,11 @@ def get(dataset: str):
     return
 
 
+def download_odds_datasets():
+    list(map(get, DATASET_NAMES))
+    return
+
+
 def read(
         dataset: str,
         normalization_mode: Optional[str] = None,
@@ -114,10 +116,10 @@ def read(
 ) -> Tuple[numpy.ndarray, numpy.ndarray]:
     """ Read and preparse the dataset.
     Returns the data and the labels.
-    In the data, rows are instances, and columns are attributes.
+    Rows are instances, and columns are attributes.
     """
-    data_path = DATA_DIR.joinpath(f'{dataset}.npy')
-    labels_path = DATA_DIR.joinpath(f'{dataset}_labels.npy')
+    data_path = paths.DATA_DIR.joinpath(f'{dataset}.npy')
+    labels_path = paths.DATA_DIR.joinpath(f'{dataset}_labels.npy')
 
     if not data_path.exists():
         get(dataset)

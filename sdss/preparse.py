@@ -4,24 +4,23 @@ from typing import List
 from typing import Optional
 
 import numpy
-from tqdm import tqdm
 from astropy.io import fits
+from tqdm import tqdm
 
+from utils import paths
 
-# APO_CHUNK = '1m'
+__all__ = ['extract_apogee']
+
 APO_CHUNK = '25m'
 
-ROOT_DIR = Path(__file__).parent.parent.resolve()
-DATA_DIR = ROOT_DIR.joinpath('data')
-
 APOGEE_PATH = Path(f'/data/abd/sdss/stars/apo{APO_CHUNK}').resolve()
-APOGEE_OUT_PATH = DATA_DIR.joinpath(f'apo{APO_CHUNK}.npy')
-APOGEE_METADATA_PATH = DATA_DIR.joinpath(f'apo{APO_CHUNK}_filenames.csv')
+APOGEE_OUT_PATH = paths.DATA_DIR.joinpath(f'apo{APO_CHUNK}.npy')
+APOGEE_METADATA_PATH = paths.DATA_DIR.joinpath(f'apo{APO_CHUNK}_filenames.csv')
 
 NUM_DIMS = 8_575
 
 
-def get_fits_file_paths() -> Dict[str, List[str]]:
+def get_fields_map() -> Dict[str, List[str]]:
     print('finding all fields...')
 
     fields_map: Dict[str, List[str]] = dict()
@@ -102,9 +101,5 @@ def extract_combined_spectra(fields_map: Dict[str, List[str]], *, test_chunk: Op
     return
 
 
-if __name__ == '__main__':
-    DATA_DIR.mkdir(exist_ok=True)
-
-    get_fits_file_paths()
-    # extract_combined_spectra(get_fits_file_paths())
-    # extract_combined_spectra(get_fits_file_paths(), test_chunk=10_000)
+def extract_apogee():
+    extract_combined_spectra(get_fields_map())

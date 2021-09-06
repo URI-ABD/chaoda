@@ -69,9 +69,11 @@ def parse_csv(mode: str, datasets: List[str]):
 
     new_df: pandas.DataFrame = pandas.DataFrame()
     models = list(sorted(raw_df['model'].tolist()))
+
     if 'CHAODA' in models:
         models[models.index('CHAODA')] = models[0]
         models[0] = 'CHAODA'
+
     if 'CHAODA-Fast' in models:
         models[models.index('CHAODA-Fast')] = models[1]
         models[1] = 'CHAODA-Fast'

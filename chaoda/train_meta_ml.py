@@ -1,4 +1,3 @@
-import random
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -17,6 +16,8 @@ from utils import constants
 from utils import datasets
 from utils import helpers
 from utils import paths
+
+__all__ = ['create_models', 'SAMPLING_DATASETS']
 
 SAMPLING_DATASETS = [
     'annthyroid',
@@ -89,7 +90,7 @@ def extract_lr(model: LinearRegression, metric: str, method: str):
     ])
 
 
-def _build_data(
+def build_data(
         method_function: Callable[[Graph], Dict[Cluster, float]],
         graph: Graph,
         manifold: Manifold,
@@ -181,7 +182,7 @@ def train_models(train_datasets: List[str], num_epochs: int) -> Dict[str, str]:
                     print('-' * 120)
                     print(f'\t\tDataset: {dataset}, Epoch: {epoch + 1} of {num_epochs}, Metric: {metric_name}, Method: {method_name}')
                     print('-' * 120)
-                    train_x, train_y = _build_data(method_function, graph, manifold, labels)
+                    train_x, train_y = build_data(method_function, graph, manifold, labels)
                     if train_x_dict[metric_name][method_name] is None:
                         train_x_dict[metric_name][method_name] = train_x
                         train_y_dict[metric_name][method_name] = train_y
@@ -208,7 +209,7 @@ def train_models(train_datasets: List[str], num_epochs: int) -> Dict[str, str]:
     return model_codes
 
 
-def write_meta_models(model_codes: Dict[str, str], out_path: str):
+def write_models(model_codes: Dict[str, str], out_path: str):
     with open(out_path, 'w') as fp:
         fp.write('import numpy\n\n')
 
@@ -222,13 +223,9 @@ def write_meta_models(model_codes: Dict[str, str], out_path: str):
     return
 
 
-if __name__ == '__main__':
-    numpy.random.seed(42), random.seed(42)
-    _train_datasets = ['vertebral', 'wine']  # for testing
-    # _train_datasets = list(sorted(numpy.random.choice(SAMPLING_DATASETS, 6, replace=False)))
-    # print(_train_datasets)
-    # exit(1)
-    write_meta_models(
-        train_models(_train_datasets, num_epochs=10),
-        paths.ROOT_DIR.joinpath('src').joinpath('custom_meta_models.py')
+def create_models(train_datasets: List[str], num_epochs: int):
+    write_models(
+        train_models(train_datasets, num_epochs),
+        paths.ROOT_DIR.joinpath('chaoda').joinpath('custom_meta_models.py')
     )
+    return
