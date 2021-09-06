@@ -25,8 +25,10 @@ from pyod.models import sos
 from pyod.models import vae
 from sklearn.metrics import roc_auc_score
 
-import datasets as chaoda_datasets
-import utils
+from utils import constants
+from utils import datasets
+from utils import helpers
+from utils import paths
 
 
 # TODO: Break out deep-learning based methods in a separate comparisons table.
@@ -96,19 +98,19 @@ def timeout_handler(signum, frame):
     raise TimeoutException
 
 
-def run_model(model_name: str, datasets: List[str], max_time: int = 36_000):
+def run_model(model_name: str, dataset_names: List[str], max_time: int = 36_000):
     """ Runs a PyOD model on all datasets.
 
     Args:
         model_name: name of pyod-model
-        datasets: list of dataset names fom ODDS.
+        dataset_names: list of dataset names fom ODDS.
         max_time: max number of seconds to allow the model.
     """
     signal.signal(signal.SIGALRM, timeout_handler)
 
-    for dataset in datasets:
-        data, labels = chaoda_datasets.read(dataset, utils.NORMALIZE, utils.SUB_SAMPLE)
-        utils.print_blurb(model_name, dataset, data.shape)
+    for dataset in dataset_names:
+        data, labels = datasets.read(dataset, constants.NORMALIZE, constants.SUB_SAMPLE)
+        helpers.print_blurb(model_name, dataset, data.shape)
 
         contamination: float = 0.1  # This is the default set by the authors of pyOD.
         # This is supposed to be the fraction of points that are outliers. We feel that
@@ -136,13 +138,13 @@ def run_model(model_name: str, datasets: List[str], max_time: int = 36_000):
         except Exception as _:
             score, time_taken = 'EX', 'EX'
 
-        scores_df, times_df = utils.get_dataframes()
+        scores_df, times_df = helpers.get_dataframes()
 
         scores_df.at[model_name, dataset] = score
         times_df.at[model_name, dataset] = time_taken
 
-        scores_df.to_csv(utils.SCORES_PATH, float_format='%.2f')
-        times_df.to_csv(utils.TIMES_PATH, float_format='%.2e')
+        scores_df.to_csv(paths.SCORES_PATH, float_format='%.2f')
+        times_df.to_csv(paths.TIMES_PATH, float_format='%.2e')
 
     return
 
@@ -150,9 +152,9 @@ def run_model(model_name: str, datasets: List[str], max_time: int = 36_000):
 if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     numpy.random.seed(42), random.seed(42)
-    utils.RESULTS_DIR.mkdir(exist_ok=True)
-    _datasets = chaoda_datasets.DATASET_NAMES
+    paths.RESULTS_DIR.mkdir(exist_ok=True)
+    _dataset_names = datasets.DATASET_NAMES
     # _datasets = ['lympho']  # for testing
 
     for _name in PYOD_MODELS:
-        run_model(_name, _datasets, 600)
+        run_model(_name, _dataset_names, 600)
