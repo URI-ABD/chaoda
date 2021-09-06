@@ -104,32 +104,70 @@ If you wish to revert to the models we provide, just delete this file.
 
 ### Benchmarking CHAODA:
 
-
-
-You should see a new folder called ```data``` in this directory.
-This folder contains all downloaded datasets in ```.mat``` format.
-
-If you are happy to use the pre-trained meta-ml models we provide, you can skip this next step.
-However, should you wish to re-train the meta-ml models for CHAODA, run the following command:
+You can reproduce CHAODA benchmarks with:
 ```bash
-$ python train_meta_ml.py
+$ python main.py --mode bench-chaoda
 ```
 
-This should have created a new Python file named ```meta_models.py```.
-You will have to change line 10 in ```benchmark_chaoda.py``` to use the newly trained meta-ml models.
+This will create two files:
 
-Next, you can run the CHAODA benchmarks.
+* `results/scores.csv`, and
+* `results/times.csv`
+
+If you want to use our heuristic for what we call CHAODA_FAST, simply add the `--fast` flag:
 ```bash
-$ python benchmark_chaoda.py
+$ python main.py --mode bench-chaoda --fast
 ```
 
-If you wish to benchmark the methods we compared against in the paper, you can run:
+If you want to see detailed statistics on each individual algorithm in the ensemble, add the `--report-individual-methods` flag:
 ```bash
-$ python comparisons.py
+$ python main.py --mode bench-chaoda --report-individual-methods
+```
+This will create a giant file called `results/individual_scores.csv`.
+
+### Benchmarking Competitors:
+
+We benchmark many competing algorithms from the PyOD suite.
+You can reproduce these with:
+```bash
+$ python main.py --mode bench-pyod
+```
+We default to allowing each of these algorithms up to `10` hours to finish running.
+You can override the default by passing in the number of seconds with the `--pyod-time-limit` argument:
+```bash
+$ python main.py --mode bench-pyod --pyod-time-limit 600
 ```
 
-These last three commands each take a very long time to run.
-Grab a coffee, cook a turkey, bake a cake, watch a movie, and repeat as necessary.
+This will add benchmarks to `results/scores.csv` and `results/times.csv`.
 
-You should see a new folder called ```results``` in this directory.
-This folder contains the ```.csv``` files containing the AUC performance of CHAODA and competitors.
+### Scoring the APOGEE Data:
+
+This part is a bit more involved than the rest.
+
+First, you need to download the `APOGEE2` data from the `SDSS` archives.
+Go to [this link](https://www.sdss.org/dr16/data_access/bulk/) and follow their instructions.
+You will need approximately `1.5TB` at the time of this writing (likely more in the future).
+You may also need to read up on their [data model](https://data.sdss.org/datamodel/) if you run into problems here.
+
+Edit `APO_TELESCOPE` and `APOGEE_PATH` in `sdss/preparse.py` as needed to point the script to the apogee2 data.
+
+Run the preparse script to extract the APOGEE spectra that we used:
+```bash
+$ python main.py --mode preparse-apogee
+```
+
+For us, this extracted `528,319` spectra.
+There are probably more in this dataset, but you will need to come up with some regex magic to extract them.
+
+The preparse script will need another approx `20GB` of space to store a numpy array.
+CHAODA **does not** load the whole thing into RAM.
+From here on, you should be able to reproduce APOGEE scores on a machine with `12GB` of RAM.
+
+To score the APOGEE dataset, run:
+```bash
+$ python main.py --mode score-apogee
+```
+
+This will produce a `json` file in the `results` directory with the amount of time taken and the anomaly score for each spectrum we extracted.
+These scores correspond with the fits files named in the `filenames.csv` in the `data` directory.
+If you're an expert on the APOGEE data, have fun!

@@ -46,9 +46,8 @@ if __name__ == '__main__':
         '--fast',
         dest='fast',
         type=bool,
-        help=f'Whether to use CHAODA\'s speed heuristic. Defaults to True.',
+        help=f'Whether to use CHAODA\'s speed heuristic.',
         required=False,
-        default=True,
     )
 
     parser.add_argument(

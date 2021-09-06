@@ -7,18 +7,14 @@ from pyclam import CHAODA
 from chaoda.benchmark_chaoda import META_MODELS
 from utils import constants
 from utils import helpers
-from utils import paths
+from .preparse import APOGEE_OUT_PATH
+from .preparse import JSON_PATH
 
 __all__ = ['score_apogee']
 
-APO_CHUNK = '25m'
-
-DATA_PATH = paths.DATA_DIR.joinpath(f'apo{APO_CHUNK}.npy')
-JSON_PATH = paths.RESULTS_DIR.joinpath(f'apo{APO_CHUNK}_bench.json')
-
 
 def score_apogee(fast: bool = True):
-    data = numpy.load(DATA_PATH, mmap_mode='r')
+    data = numpy.load(APOGEE_OUT_PATH, mmap_mode='r')
 
     speed_threshold = max(128, int(numpy.sqrt(data.shape[0]))) if fast else None
     print(f'speed threshold set to {speed_threshold}')

@@ -9,13 +9,14 @@ from tqdm import tqdm
 
 from utils import paths
 
-__all__ = ['extract_apogee']
+__all__ = ['extract_apogee', 'APOGEE_OUT_PATH', 'JSON_PATH']
 
-APO_CHUNK = '25m'
+APO_TELESCOPE = '25m'
 
-APOGEE_PATH = Path(f'/data/abd/sdss/stars/apo{APO_CHUNK}').resolve()
-APOGEE_OUT_PATH = paths.DATA_DIR.joinpath(f'apo{APO_CHUNK}.npy')
-APOGEE_METADATA_PATH = paths.DATA_DIR.joinpath(f'apo{APO_CHUNK}_filenames.csv')
+APOGEE_PATH = Path(f'/data/abd/sdss/stars/apo{APO_TELESCOPE}').resolve()
+APOGEE_OUT_PATH = paths.DATA_DIR.joinpath(f'apo{APO_TELESCOPE}.npy')
+APOGEE_METADATA_PATH = paths.DATA_DIR.joinpath(f'apo{APO_TELESCOPE}_filenames.csv')
+JSON_PATH = paths.RESULTS_DIR.joinpath(f'apo{APO_TELESCOPE}_bench.json')
 
 NUM_DIMS = 8_575
 
@@ -34,7 +35,7 @@ def get_fields_map() -> Dict[str, List[str]]:
             fields_map[field.name] = files
 
     num_spectra = sum(map(len, fields_map.values()))
-    print(f'collected {num_spectra} matching fits files for {APO_CHUNK}...')
+    print(f'collected {num_spectra} matching fits files for {APO_TELESCOPE}...')
 
     return fields_map
 
@@ -91,7 +92,7 @@ def extract_combined_spectra(fields_map: Dict[str, List[str]], *, test_chunk: Op
         indices_to_keep = list(filter(lambda i: i not in indices_to_remove, range(num_spectra)))
         apogee_spectra = apogee_spectra[indices_to_keep, :]
 
-    print(f'saving {apogee_spectra.shape[0]} apo{APO_CHUNK} spectra...')
+    print(f'saving {apogee_spectra.shape[0]} apo{APO_TELESCOPE} spectra...')
     numpy.save(
         file=str(APOGEE_OUT_PATH),
         arr=apogee_spectra,
