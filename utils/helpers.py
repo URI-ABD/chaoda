@@ -2,7 +2,7 @@ from typing import Tuple
 
 import pandas
 
-import paths
+from . import paths
 
 
 def get_dataframes():

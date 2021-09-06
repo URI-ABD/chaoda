@@ -2,8 +2,8 @@ from typing import List
 
 import pandas as pd
 
-import datasets as chaoda_datasets
-import paths
+from . import datasets as chaoda_datasets
+from . import paths
 
 TRAIN_DATASETS: List[str] = list(sorted([
     'annthyroid',

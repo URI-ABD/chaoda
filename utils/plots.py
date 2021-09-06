@@ -6,7 +6,7 @@ import umap
 from matplotlib import pyplot
 from sklearn import metrics
 
-import paths
+from . import paths
 
 
 def _directory(plot: str, metric: str, method: str) -> Path:
