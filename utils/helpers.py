@@ -6,7 +6,7 @@ from . import paths
 
 
 def get_dataframes():
-    import datasets
+    from . import datasets
 
     if not paths.SCORES_PATH.exists():
         scores_df = pandas.DataFrame(columns=datasets.DATASET_NAMES)

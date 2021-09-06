@@ -1,6 +1,6 @@
 from typing import List
 
-import pandas as pd
+import pandas
 
 from . import datasets as chaoda_datasets
 from . import paths
@@ -65,9 +65,9 @@ def parse_csv(mode: str, datasets: List[str]):
 
     high = mode == 'scores'
     path = paths.SCORES_PATH if high else paths.TIMES_PATH
-    raw_df: pd.DataFrame = pd.read_csv(path, dtype=str)
+    raw_df: pandas.DataFrame = pandas.read_csv(path, dtype=str)
 
-    new_df: pd.DataFrame = pd.DataFrame()
+    new_df: pandas.DataFrame = pandas.DataFrame()
     models = list(sorted(raw_df['model'].tolist()))
     if 'CHAODA' in models:
         models[models.index('CHAODA')] = models[0]
