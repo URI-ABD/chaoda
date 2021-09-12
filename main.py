@@ -48,6 +48,17 @@ if __name__ == '__main__':
         type=bool,
         help=f'Whether to use CHAODA\'s speed heuristic.',
         required=False,
+        default=True,
+    )
+
+
+
+    parser.add_argument(
+        '--datasets',
+        dest='datasets',
+        type=str,
+        help=f'Which datasets to run benchmarks on.',
+        required=False,
     )
 
     parser.add_argument(
@@ -91,7 +102,13 @@ if __name__ == '__main__':
     elif _mode == 'bench-chaoda':
         numpy.random.seed(42), random.seed(42)
 
-        _dataset_names = utils.datasets.DATASET_NAMES
+        _dataset_names = args.datasets
+        if _dataset_names is None:
+            _dataset_names = utils.datasets.DATASET_NAMES
+        else:
+            _dataset_names = str(_dataset_names).split(',')
+            for _dataset_name in _dataset_names:
+                assert _dataset_name in utils.datasets.DATASET_NAMES, f'--dataset {_dataset_name} not found. Must be one of {utils.datasets.DATASET_NAMES}.'
 
         if args.report_individual_methods:
             _individual_scores_path = utils.paths.RESULTS_DIR.joinpath('individual_scores.csv')

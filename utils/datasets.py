@@ -82,19 +82,24 @@ def get(dataset: str):
     data_path = paths.DATA_DIR.joinpath(f'{dataset}.npy')
     labels_path = paths.DATA_DIR.joinpath(f'{dataset}_labels.npy')
 
-    filename = paths.DATA_DIR.joinpath(f'{dataset}.mat')
-    if not filename.exists():
-        subprocess.run(['wget', link, '-O', filename])
+    mat_filename = paths.DATA_DIR.joinpath(f'{dataset}.mat')
+    npy_filename = paths.DATA_DIR.joinpath(f'{dataset}.npy')
 
-    if not filename.exists():
+    if npy_filename.exists():
+        return
+
+    if not mat_filename.exists():
+        subprocess.run(['wget', link, '-O', mat_filename])
+
+    if not mat_filename.exists():
         raise ValueError(f'Could not get dataset {dataset}.')
 
     data_dict = dict()
     try:
-        data_dict = loadmat(filename)
+        data_dict = loadmat(mat_filename)
     except (NotImplementedError, MatReadError):
         # noinspection PyUnresolvedReferences
-        with h5py.File(filename, 'r') as fp:
+        with h5py.File(mat_filename, 'r') as fp:
             for k, v in fp.items():
                 if k in ['X', 'y']:
                     data_dict[k] = numpy.asarray(v, dtype=float).T
