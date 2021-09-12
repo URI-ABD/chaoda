@@ -35,7 +35,7 @@ def bench_dataset(dataset: str, fast: bool, individuals_csv_path: Optional[Path]
     :param fast: Whether to use the speed heuristic
     :param individuals_csv_path:
     """
-    data, labels = datasets.read(dataset, None, None)
+    data, labels = datasets.read(dataset, 'gaussian', None)
     chaoda_name = 'CHAODA-Fast' if fast else 'CHAODA'
     helpers.print_blurb(chaoda_name, dataset, data.shape)
     speed_threshold = max(128, int(numpy.sqrt(len(labels)))) if fast else None

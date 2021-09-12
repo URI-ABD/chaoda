@@ -17,6 +17,7 @@ __all__ = [
     'DATASET_NAMES',
     'SHORT_NAMES',
     'read',
+    'print_means',
 ]
 
 DATASET_LINKS: Dict[str, str] = {
@@ -44,6 +45,7 @@ DATASET_LINKS: Dict[str, str] = {
     'vowels': 'https://www.dropbox.com/s/pa26odoq6atq9vx/vowels.mat?dl=0',
     'wbc': 'https://www.dropbox.com/s/ebz9v9kdnvykzcb/wbc.mat?dl=0',
     'wine': 'https://www.dropbox.com/s/uvjaudt2uto7zal/wine.mat?dl=0',
+    'dummy': 'localhost',
 }
 
 SHORT_NAMES = {
@@ -83,10 +85,6 @@ def get(dataset: str):
     labels_path = paths.DATA_DIR.joinpath(f'{dataset}_labels.npy')
 
     mat_filename = paths.DATA_DIR.joinpath(f'{dataset}.mat')
-    npy_filename = paths.DATA_DIR.joinpath(f'{dataset}.npy')
-
-    if npy_filename.exists():
-        return
 
     if not mat_filename.exists():
         subprocess.run(['wget', link, '-O', mat_filename])
@@ -111,6 +109,12 @@ def get(dataset: str):
 
 def download_datasets():
     list(map(get, DATASET_NAMES))
+    return
+
+
+def print_means(data: numpy.ndarray):
+    numpy.set_printoptions(precision=4)
+    print(data)
     return
 
 
@@ -143,6 +147,10 @@ def read(
         labels = numpy.asarray(labels[samples], dtype=int)
 
     if normalization_mode is not None:
+        print('before normalization:')
+        print_means(data)
         data = normalize(data, normalization_mode)
+        print('\nafter normalization:')
+        print_means(data)
 
     return numpy.asarray(data, dtype=numpy.float32), numpy.asarray(numpy.squeeze(labels), dtype=numpy.uint8)
