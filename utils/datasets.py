@@ -45,7 +45,6 @@ DATASET_LINKS: Dict[str, str] = {
     'vowels': 'https://www.dropbox.com/s/pa26odoq6atq9vx/vowels.mat?dl=0',
     'wbc': 'https://www.dropbox.com/s/ebz9v9kdnvykzcb/wbc.mat?dl=0',
     'wine': 'https://www.dropbox.com/s/uvjaudt2uto7zal/wine.mat?dl=0',
-    'dummy': 'localhost',
 }
 
 SHORT_NAMES = {
